@@ -816,10 +816,15 @@ export default function App() {
       <header className="border-b border-[#141414]/10 bg-white/50 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="w-8 h-8 bg-[#141414] rounded-lg flex items-center justify-center text-white shrink-0">
-              <TrendingUp size={20} />
-            </div>
-            <h1 className="text-lg md:text-xl font-semibold tracking-tight truncate">{t('appManager')}</h1>
+            <button 
+              onClick={() => setView('dashboard')}
+              className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity"
+            >
+              <div className="w-8 h-8 bg-[#141414] rounded-lg flex items-center justify-center text-white shrink-0">
+                <TrendingUp size={20} />
+              </div>
+              <h1 className="text-base md:text-xl font-semibold tracking-tight truncate">{t('appManager')}</h1>
+            </button>
           </div>
           
           <div className="flex items-center gap-2 md:gap-4">
@@ -905,6 +910,20 @@ export default function App() {
               className="xl:hidden bg-white border-t border-[#141414]/10 overflow-hidden"
             >
               <div className="p-4 space-y-4">
+                {/* Mobile Menu Header Title */}
+                <button 
+                  onClick={() => {
+                    setView('dashboard');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 px-4 py-2 hover:bg-[#141414]/5 rounded-xl transition-all w-full text-left"
+                >
+                  <div className="w-8 h-8 bg-[#141414] rounded-lg flex items-center justify-center text-white shrink-0">
+                    <TrendingUp size={20} />
+                  </div>
+                  <span className="font-bold text-lg">{t('appManager')}</span>
+                </button>
+
                 <nav className="grid grid-cols-1 gap-2">
                   {[
                     { id: 'dashboard', label: t('dashboard'), icon: TrendingUp },
@@ -987,20 +1006,20 @@ export default function App() {
         </AnimatePresence>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8">
+      <main className="max-w-7xl mx-auto px-3 md:px-6 py-3 md:py-8">
         {view === 'dashboard' ? (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
             {/* Left Column: Stats & Charts */}
-            <div className="lg:col-span-2 space-y-6 md:space-y-8">
+            <div className="lg:col-span-2 space-y-4 md:space-y-8">
               {/* Summary Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm"
+                  className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm"
                 >
-                  <p className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('totalWealth')}</p>
+                  <p className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('totalWealth')}</p>
                   <p className="text-lg md:text-xl font-bold">{formatCurrency(totalValue, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</p>
                 </motion.div>
 
@@ -1008,9 +1027,9 @@ export default function App() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm"
+                  className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm"
                 >
-                  <p className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('totalProfitLoss')}</p>
+                  <p className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('totalProfitLoss')}</p>
                   <div className="flex flex-col">
                     <p className={cn(
                       "text-lg md:text-xl font-bold",
@@ -1019,7 +1038,7 @@ export default function App() {
                       {riskMetrics.totalPl >= 0 ? '+' : ''}{formatCurrency(riskMetrics.totalPl, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
                     </p>
                     <p className={cn(
-                      "text-[10px] font-bold",
+                      "text-xs font-bold",
                       riskMetrics.totalPlPercent >= 0 ? "text-emerald-500" : "text-red-500"
                     )}>
                       {riskMetrics.totalPlPercent >= 0 ? '+' : ''}{riskMetrics.totalPlPercent.toFixed(2)}%
@@ -1031,14 +1050,14 @@ export default function App() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm"
+                  className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm"
                 >
-                  <p className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('wealthFreedomProgress')}</p>
+                  <p className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('wealthFreedomProgress')}</p>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-lg md:text-xl font-bold">{freedomProgress.toFixed(1)}%</p>
                       <div className={cn(
-                        "flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-br text-white text-[8px] font-bold",
+                        "flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-br text-white text-[10px] font-bold",
                         currentMilestone.color
                       )}>
                         <currentMilestone.icon size={10} />
@@ -1059,13 +1078,13 @@ export default function App() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="bg-white p-4 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm"
+                  className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm"
                 >
-                  <p className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('monthlyInvestmentProgress')}</p>
+                  <p className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('monthlyInvestmentProgress')}</p>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-lg md:text-xl font-bold">{monthlyInvestmentProgress.toFixed(1)}%</p>
-                      <p className="text-[9px] text-[#141414]/40 font-bold">
+                      <p className="text-xs md:text-[10px] text-[#141414]/40 font-bold">
                         {formatCurrency(convert(monthlyInvestmentTotal), { maximumFractionDigits: 0 })} / {formatCurrency(monthlyContribution, { maximumFractionDigits: 0 })}
                       </p>
                     </div>
@@ -1200,10 +1219,10 @@ export default function App() {
 
                   {/* Holdings list inside the card */}
                   <div className="lg:col-span-2 flex flex-col justify-center">
-                    <h4 className="text-xs font-bold uppercase text-[#141414]/40 mb-4">
+                    <h4 className="text-[10px] md:text-xs font-bold uppercase text-[#141414]/40 mb-3 md:mb-4">
                       {selectedAsset ? t('assetDetails') : selectedCategory ? t('holdingsIn', { category: selectedCategory }) : t('holdingsOverview')}
                     </h4>
-                    <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-2 md:space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                       {selectedAsset ? (
                         // Asset Details View
                         (() => {
@@ -1215,38 +1234,38 @@ export default function App() {
                           const plPercentage = costUsd > 0 ? (pl / costUsd) * 100 : 0;
                           
                           return (
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="p-3 bg-[#141414]/2 rounded-xl">
-                                  <p className="text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('totalValue')}</p>
-                                  <p className="text-sm font-bold">{formatCurrency(totalUsd)}</p>
+                            <div className="space-y-3 md:space-y-4">
+                              <div className="grid grid-cols-2 gap-3 md:gap-4">
+                                <div className="p-2 md:p-3 bg-[#141414]/2 rounded-xl">
+                                  <p className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-0.5 md:mb-1">{t('totalValue')}</p>
+                                  <p className="text-xs md:text-sm font-bold">{formatCurrency(totalUsd)}</p>
                                 </div>
-                                <div className="p-3 bg-[#141414]/2 rounded-xl">
-                                  <p className="text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('profitLoss')}</p>
-                                  <p className={cn("text-sm font-bold", pl >= 0 ? "text-emerald-600" : "text-red-600")}>
+                                <div className="p-2 md:p-3 bg-[#141414]/2 rounded-xl">
+                                  <p className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-0.5 md:mb-1">{t('profitLoss')}</p>
+                                  <p className={cn("text-xs md:text-sm font-bold", pl >= 0 ? "text-emerald-600" : "text-red-600")}>
                                     {formatCurrency(pl)} ({plPercentage.toFixed(1)}%)
                                   </p>
                                 </div>
-                                <div className="p-3 bg-[#141414]/2 rounded-xl">
-                                  <p className="text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('quantity')}</p>
-                                  <p className="text-sm font-bold">{asset.quantity.toLocaleString()}</p>
+                                <div className="p-2 md:p-3 bg-[#141414]/2 rounded-xl">
+                                  <p className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-0.5 md:mb-1">{t('quantity')}</p>
+                                  <p className="text-xs md:text-sm font-bold">{asset.quantity.toLocaleString()}</p>
                                 </div>
-                                <div className="p-3 bg-[#141414]/2 rounded-xl">
-                                  <p className="text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('marketPrice')}</p>
-                                  <p className="text-sm font-bold">{formatCurrency(asset.currentPrice)}</p>
+                                <div className="p-2 md:p-3 bg-[#141414]/2 rounded-xl">
+                                  <p className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-0.5 md:mb-1">{t('marketPrice')}</p>
+                                  <p className="text-xs md:text-sm font-bold">{formatCurrency(asset.currentPrice)}</p>
                                 </div>
-                                <div className="p-3 bg-[#141414]/2 rounded-xl">
-                                  <p className="text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('avgPrice')}</p>
-                                  <p className="text-sm font-bold">{formatCurrency(asset.averagePrice)}</p>
+                                <div className="p-2 md:p-3 bg-[#141414]/2 rounded-xl">
+                                  <p className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-0.5 md:mb-1">{t('avgPrice')}</p>
+                                  <p className="text-xs md:text-sm font-bold">{formatCurrency(asset.averagePrice)}</p>
                                 </div>
-                                <div className="p-3 bg-[#141414]/2 rounded-xl">
-                                  <p className="text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('forwardPe')}</p>
-                                  <p className="text-sm font-bold">{asset.forwardPe ? `${asset.forwardPe.toFixed(1)}x` : 'N/A'}</p>
+                                <div className="p-2 md:p-3 bg-[#141414]/2 rounded-xl">
+                                  <p className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-0.5 md:mb-1">{t('forwardPe')}</p>
+                                  <p className="text-xs md:text-sm font-bold">{asset.forwardPe ? `${asset.forwardPe.toFixed(1)}x` : 'N/A'}</p>
                                 </div>
-                                <div className="p-3 bg-[#141414]/2 rounded-xl">
-                                  <p className="text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('dailyChange')}</p>
+                                <div className="p-2 md:p-3 bg-[#141414]/2 rounded-xl">
+                                  <p className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-0.5 md:mb-1">{t('dailyChange')}</p>
                                   <p className={cn(
-                                    "text-sm font-bold",
+                                    "text-xs md:text-sm font-bold",
                                     (asset.changePercent || 0) >= 0 ? "text-emerald-500" : "text-red-500"
                                   )}>
                                     {(asset.changePercent || 0) >= 0 ? '+' : ''}{asset.changePercent?.toFixed(2)}%
@@ -1268,19 +1287,19 @@ export default function App() {
                                 setSelectedCategory(item.name);
                               }
                             }}
-                            className="w-full flex items-center justify-between p-3 bg-[#141414]/2 rounded-xl hover:bg-[#141414]/5 transition-colors text-left group"
+                            className="w-full flex items-center justify-between p-2.5 md:p-3 bg-[#141414]/2 rounded-xl hover:bg-[#141414]/5 transition-colors text-left group"
                           >
-                            <div className="flex items-center gap-3">
-                              <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                            <div className="flex items-center gap-2 md:gap-3">
+                              <div className="w-1 md:w-1.5 h-5 md:h-6 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
                               <div>
-                                <p className="text-sm font-bold group-hover:text-[#141414] transition-colors">
+                                <p className="text-xs md:text-sm font-bold group-hover:text-[#141414] transition-colors">
                                   {item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name}
                                 </p>
-                                <p className="text-[10px] text-[#141414]/40">{(item.value / totalValue * 100).toFixed(1)}% of total</p>
+                                <p className="text-[9px] md:text-[10px] text-[#141414]/40">{(item.value / totalValue * 100).toFixed(1)}% of total</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <p className="text-sm font-mono font-bold">
+                              <p className="text-xs md:text-sm font-mono font-bold">
                                 {formatCurrency(item.value, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
                               </p>
                               <ArrowDownRight className="-rotate-45 opacity-0 group-hover:opacity-100 transition-opacity" size={14} />
@@ -1297,25 +1316,25 @@ export default function App() {
             {/* Right Column: Actions & Upload */}
             <div className="space-y-8">
               {/* Upload Section */}
-              <div className="bg-[#141414] text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
+              <div className="bg-[#141414] text-white p-5 md:p-8 rounded-3xl shadow-xl relative overflow-hidden">
                 <div className="relative z-10">
-                  <h3 className="text-xl font-bold mb-2">{t('updatePortfolio')}</h3>
-                  <p className="text-white/60 text-sm mb-6">{t('updatePortfolioDesc')}</p>
+                  <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2">{t('updatePortfolio')}</h3>
+                  <p className="text-white/60 text-xs md:text-sm mb-4 md:mb-6">{t('updatePortfolioDesc')}</p>
                   
                   <label className={cn(
-                    "flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-2xl p-8 cursor-pointer transition-all hover:border-white/40 hover:bg-white/5",
+                    "flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-2xl p-5 md:p-8 cursor-pointer transition-all hover:border-white/40 hover:bg-white/5",
                     isUploading && "opacity-50 cursor-not-allowed"
                   )}>
                     {isUploading ? (
                       <div className="flex flex-col items-center">
-                        <Loader2 className="animate-spin mb-4" size={32} />
-                        <p className="text-sm font-medium">{t('analyzingImage')}</p>
+                        <Loader2 className="animate-spin mb-3 md:mb-4" size={24} />
+                        <p className="text-xs md:text-sm font-medium">{t('analyzingImage')}</p>
                       </div>
                     ) : (
                       <>
-                        <Upload className="mb-4" size={32} />
-                        <p className="text-sm font-medium">{t('clickDragPaste')}</p>
-                        <p className="text-xs text-white/40 mt-1">{t('fileTypes')}</p>
+                        <Upload className="mb-3 md:mb-4" size={24} />
+                        <p className="text-xs md:text-sm font-medium">{t('clickDragPaste')}</p>
+                        <p className="text-[10px] md:text-xs text-white/40 mt-1">{t('fileTypes')}</p>
                       </>
                     )}
                     <input 
@@ -1338,22 +1357,22 @@ export default function App() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white p-6 rounded-3xl border-2 border-[#141414] shadow-2xl"
+                    className="bg-white p-4 md:p-6 rounded-3xl border-2 border-[#141414] shadow-2xl"
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-bold text-lg">{t('confirmData')}</h4>
+                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                      <h4 className="font-bold text-base md:text-lg">{t('confirmData')}</h4>
                       <button onClick={() => setExtractedData(null)} className="text-[#141414]/40 hover:text-[#141414]">
-                        <X size={20} />
+                        <X size={18} />
                       </button>
                     </div>
                     
-                    <div className="space-y-4 mb-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="space-y-3 md:space-y-4 mb-4 md:mb-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                       {extractedData.type === 'PORTFOLIO' && (
-                        <div className="flex items-center gap-2 p-1 bg-[#141414]/5 rounded-xl mb-4">
+                        <div className="flex items-center gap-2 p-1 bg-[#141414]/5 rounded-xl mb-3 md:mb-4">
                           <button 
                             onClick={() => setUpdateMode('merge')}
                             className={cn(
-                              "flex-1 py-2 rounded-lg text-xs font-bold transition-all",
+                              "flex-1 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all",
                               updateMode === 'merge' ? "bg-white shadow-sm" : "text-[#141414]/40"
                             )}
                           >
@@ -1362,7 +1381,7 @@ export default function App() {
                           <button 
                             onClick={() => setUpdateMode('replace')}
                             className={cn(
-                              "flex-1 py-2 rounded-lg text-xs font-bold transition-all",
+                              "flex-1 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold transition-all",
                               updateMode === 'replace' ? "bg-white shadow-sm" : "text-[#141414]/40"
                             )}
                           >
@@ -1371,12 +1390,12 @@ export default function App() {
                         </div>
                       )}
 
-                      <p className="text-xs font-bold uppercase text-[#141414]/40">
+                      <p className="text-[10px] md:text-xs font-bold uppercase text-[#141414]/40">
                         {extractedData.type === 'PORTFOLIO' ? t('detectedHoldings') : t('detectedTrade')}
                       </p>
                       
                       {extractedData.items.map((item: any, i: number) => (
-                        <div key={i} className="bg-[#141414]/5 p-4 rounded-xl relative group">
+                        <div key={i} className="bg-[#141414]/5 p-3 md:p-4 rounded-xl relative group">
                           <button 
                             onClick={() => removeExtractedItem(i)}
                             className="absolute top-2 right-2 p-1 opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-600"
@@ -1384,20 +1403,20 @@ export default function App() {
                             <Trash2 size={14} />
                           </button>
                           
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-2 gap-2 md:gap-3">
                             <div className="col-span-2">
-                              <label className="text-[10px] text-[#141414]/40 uppercase font-bold">{t('symbol')}</label>
+                              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('symbol')}</label>
                               <input 
-                                className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none"
+                                className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs md:text-sm"
                                 value={item.symbol}
                                 onChange={(e) => handleExtractedItemChange(i, 'symbol', e.target.value)}
                               />
                             </div>
                             {extractedData.type === 'TRADE' && (
                               <div className="col-span-2">
-                                <label className="text-[10px] text-[#141414]/40 uppercase font-bold">{t('tradeType')}</label>
+                                <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('tradeType')}</label>
                                 <select 
-                                  className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none"
+                                  className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs md:text-sm"
                                   value={item.tradeType}
                                   onChange={(e) => handleExtractedItemChange(i, 'tradeType', e.target.value)}
                                 >
@@ -1407,61 +1426,61 @@ export default function App() {
                               </div>
                             )}
                             <div>
-                              <label className="text-[10px] text-[#141414]/40 uppercase font-bold">{t('quantity')}</label>
+                              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('quantity')}</label>
                               <input 
                                 type="number"
-                                className="w-full bg-transparent border-b border-[#141414]/10 font-mono outline-none"
+                                className="w-full bg-transparent border-b border-[#141414]/10 font-mono outline-none text-xs md:text-sm"
                                 value={item.quantity}
                                 onChange={(e) => handleExtractedItemChange(i, 'quantity', e.target.value)}
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] text-[#141414]/40 uppercase font-bold">{t('price')}</label>
+                              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('price')}</label>
                               <input 
                                 type="number"
-                                className="w-full bg-transparent border-b border-[#141414]/10 font-mono outline-none"
+                                className="w-full bg-transparent border-b border-[#141414]/10 font-mono outline-none text-xs md:text-sm"
                                 value={item.price}
                                 onChange={(e) => handleExtractedItemChange(i, 'price', e.target.value)}
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] text-[#141414]/40 uppercase font-bold">{t('currency')}</label>
+                              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('currency')}</label>
                               <input 
-                                className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none"
+                                className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs md:text-sm"
                                 value={item.currency}
                                 onChange={(e) => handleExtractedItemChange(i, 'currency', e.target.value)}
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] text-[#141414]/40 uppercase font-bold">{t('fxRate')}</label>
+                              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('fxRate')}</label>
                               <input 
                                 type="number"
                                 step="0.0001"
-                                className="w-full bg-transparent border-b border-[#141414]/10 font-mono outline-none"
+                                className="w-full bg-transparent border-b border-[#141414]/10 font-mono outline-none text-xs md:text-sm"
                                 value={item.fxRateToUsd}
                                 onChange={(e) => handleExtractedItemChange(i, 'fxRateToUsd', e.target.value)}
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] text-[#141414]/40 uppercase font-bold">{t('sector')}</label>
+                              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('sector')}</label>
                               <input 
-                                className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs"
+                                className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs md:text-sm"
                                 value={item.sector}
                                 onChange={(e) => handleExtractedItemChange(i, 'sector', e.target.value)}
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] text-[#141414]/40 uppercase font-bold">{t('country')}</label>
+                              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('country')}</label>
                               <input 
-                                className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs"
+                                className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs md:text-sm"
                                 value={item.country}
                                 onChange={(e) => handleExtractedItemChange(i, 'country', e.target.value)}
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] text-[#141414]/40 uppercase font-bold">{t('assetType')}</label>
+                              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('assetType')}</label>
                               <select 
-                                className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs"
+                                className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs md:text-sm"
                                 value={item.assetType}
                                 onChange={(e) => handleExtractedItemChange(i, 'assetType', e.target.value)}
                               >
@@ -1474,20 +1493,20 @@ export default function App() {
                               </select>
                             </div>
                             <div>
-                              <label className="text-[10px] text-[#141414]/40 uppercase font-bold">{t('fwdPe')}</label>
+                              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('fwdPe')}</label>
                               <input 
                                 type="number"
-                                className="w-full bg-transparent border-b border-[#141414]/10 font-mono outline-none"
+                                className="w-full bg-transparent border-b border-[#141414]/10 font-mono outline-none text-xs md:text-sm"
                                 value={item.forwardPe}
                                 onChange={(e) => handleExtractedItemChange(i, 'forwardPe', e.target.value)}
                               />
                             </div>
                             <div>
-                              <label className="text-[10px] text-[#141414]/40 uppercase font-bold">{t('dailyChange')}</label>
+                              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('dailyChange')}</label>
                               <input 
                                 type="number"
                                 step="0.01"
-                                className="w-full bg-transparent border-b border-[#141414]/10 font-mono outline-none"
+                                className="w-full bg-transparent border-b border-[#141414]/10 font-mono outline-none text-xs md:text-sm"
                                 value={item.changePercent}
                                 onChange={(e) => handleExtractedItemChange(i, 'changePercent', e.target.value)}
                               />
@@ -1497,17 +1516,17 @@ export default function App() {
                       ))}
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-2 md:gap-3">
                       <button 
                         onClick={confirmExtraction}
-                        className="flex-1 bg-[#141414] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#141414]/90 transition-colors"
+                        className="flex-1 bg-[#141414] text-white py-2.5 md:py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#141414]/90 transition-colors text-xs md:text-sm"
                       >
-                        <Check size={18} />
+                        <Check size={16} />
                         {t('confirm')}
                       </button>
                       <button 
                         onClick={() => setExtractedData(null)}
-                        className="flex-1 border border-[#141414]/10 py-3 rounded-xl font-bold hover:bg-[#141414]/5 transition-colors"
+                        className="flex-1 border border-[#141414]/10 py-2.5 md:py-3 rounded-xl font-bold hover:bg-[#141414]/5 transition-colors text-xs md:text-sm"
                       >
                         {t('cancelEdit')}
                       </button>
@@ -1517,9 +1536,9 @@ export default function App() {
               </AnimatePresence>
 
               {/* Quick Actions */}
-              <div className="bg-white p-6 rounded-3xl border border-[#141414]/5 shadow-sm">
-                <h3 className="font-bold mb-4">{t('quickActions')}</h3>
-                <div className="space-y-3">
+              <div className="bg-white p-5 md:p-6 rounded-3xl border border-[#141414]/5 shadow-sm">
+                <h3 className="font-bold mb-3 md:mb-4 text-sm md:text-base">{t('quickActions')}</h3>
+                <div className="space-y-2 md:space-y-3">
                   <button 
                     onClick={() => {
                       setConfirmModal({
@@ -1537,10 +1556,10 @@ export default function App() {
                         }
                       });
                     }}
-                    className="w-full flex items-center justify-between p-4 rounded-2xl border border-[#141414]/5 hover:bg-red-50 hover:border-red-100 hover:text-red-600 transition-all group"
+                    className="w-full flex items-center justify-between p-3 md:p-4 rounded-2xl border border-[#141414]/5 hover:bg-red-50 hover:border-red-100 hover:text-red-600 transition-all group"
                   >
-                    <span className="font-medium">{t('resetPortfolio')}</span>
-                    <Trash2 size={18} className="text-[#141414]/20 group-hover:text-red-400" />
+                    <span className="font-medium text-xs md:text-sm">{t('resetPortfolio')}</span>
+                    <Trash2 size={16} className="text-[#141414]/20 group-hover:text-red-400" />
                   </button>
                 </div>
               </div>
@@ -1554,8 +1573,8 @@ export default function App() {
             transition={{ delay: 0.3 }}
             className="bg-white rounded-3xl border border-[#141414]/5 shadow-sm overflow-hidden mt-8"
           >
-            <div className="p-6 border-b border-[#141414]/5 flex items-center justify-between">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
+            <div className="p-4 md:p-6 border-b border-[#141414]/5 flex items-center justify-between">
+              <h3 className="text-base md:text-lg font-semibold flex items-center gap-2">
                 {t('currentHoldings')}
               </h3>
             </div>
@@ -1564,49 +1583,49 @@ export default function App() {
                 <thead className="sticky top-0 z-30 bg-white">
                   <tr className="bg-[#141414]/[0.01]">
                     <th 
-                      className="px-1 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors sticky left-0 z-40 bg-white min-w-[55px] md:min-w-[240px]"
+                      className="px-2 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors sticky left-0 z-40 bg-white min-w-[65px] md:min-w-[240px]"
                       onClick={() => requestSort('symbol')}
                     >
                       {t('asset')} {sortConfig?.key === 'symbol' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
                     <th 
-                      className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors"
+                      className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors"
                       onClick={() => requestSort('quantity')}
                     >
                       {t('quantity')} {sortConfig?.key === 'quantity' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
                     <th 
-                      className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors"
+                      className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors"
                       onClick={() => requestSort('averagePrice')}
                     >
                       {t('avgPrice')} {sortConfig?.key === 'averagePrice' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
                     <th 
-                      className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors"
+                      className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors"
                       onClick={() => requestSort('currentPrice')}
                     >
                       {t('marketPrice')} {sortConfig?.key === 'currentPrice' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
                     <th 
-                      className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors"
+                      className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors"
                       onClick={() => requestSort('pl')}
                     >
                       {t('profitLoss')} {sortConfig?.key === 'pl' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
                     <th 
-                      className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors"
+                      className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors"
                       onClick={() => requestSort('forwardPe')}
                     >
                       {t('fwdPe')} {sortConfig?.key === 'forwardPe' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
                     <th 
-                      className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors"
+                      className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 cursor-pointer hover:text-[#141414] transition-colors"
                       onClick={() => requestSort('changePercent')}
                     >
                       {t('dailyChange')} {sortConfig?.key === 'changePercent' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                     </th>
                     <th 
-                      className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 text-right cursor-pointer hover:text-[#141414] transition-colors"
+                      className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 text-right cursor-pointer hover:text-[#141414] transition-colors"
                       onClick={() => requestSort('totalUsd')}
                     >
                       {t('totalUsd')} {sortConfig?.key === 'totalUsd' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
@@ -1617,7 +1636,7 @@ export default function App() {
                 <tbody className="divide-y divide-[#141414]/5">
                   {sortedPortfolio.map((item, idx) => (
                     <tr key={item.symbol} className="hover:bg-[#141414]/[0.02] transition-colors group">
-                      <td className="px-1 md:px-6 py-3 md:py-4 sticky left-0 z-20 bg-white group-hover:bg-[#F5F5F0] transition-colors border-r border-[#141414]/5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] w-[55px] md:w-[240px]">
+                      <td className="px-2 md:px-6 py-3 md:py-4 sticky left-0 z-20 bg-white group-hover:bg-[#F5F5F0] transition-colors border-r border-[#141414]/5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] w-[65px] md:w-[240px]">
                         <div className="flex items-center gap-1 md:gap-3">
                           <div 
                             className="w-1 md:w-2 h-5 md:h-8 rounded-full shrink-0" 
@@ -1626,15 +1645,15 @@ export default function App() {
                           <div className="min-w-0 flex-1">
                             {editingItem?.id === item.symbol && editingItem.type === 'portfolio' ? (
                               <input 
-                                className="font-bold bg-transparent border-b border-[#141414] outline-none w-full"
+                                className="font-bold bg-transparent border-b border-[#141414] outline-none w-full text-sm"
                                 defaultValue={item.symbol}
                                 onBlur={(e) => updatePortfolioItem(item.symbol, { symbol: e.target.value })}
                               />
                             ) : (
-                              <p className="font-bold text-[10px] md:text-sm truncate">{item.symbol}</p>
+                              <p className="font-bold text-xs md:text-sm truncate">{item.symbol}</p>
                             )}
                             <div className="hidden md:flex items-center gap-1 overflow-hidden">
-                              <span className="text-[10px] md:text-xs text-[#141414]/40 truncate">
+                              <span className="text-xs text-[#141414]/40 truncate">
                                 {item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name}
                               </span>
                             </div>

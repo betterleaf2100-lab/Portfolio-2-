@@ -190,14 +190,14 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
   const currentMilestoneIndex = Math.floor((progress / 100) * MILESTONES.length);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {/* Target Input & Summary */}
       <div className="relative">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-8 rounded-3xl border border-[#141414]/5 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold flex items-center gap-2 group relative">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
+          <div className="bg-white p-5 md:p-8 rounded-3xl border border-[#141414]/5 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <h3 className="text-lg md:text-xl font-bold flex items-center gap-2 group relative">
                 <Target className="text-emerald-600" />
                 {t('wealthGoal')}
                 <div className="relative group/tooltip">
@@ -244,32 +244,32 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
                       setManualGoal(val);
                       handleUpdateSimulation({ manualGoal: val });
                     }}
-                    className="w-full text-3xl font-bold bg-transparent border-b-2 border-[#141414]/10 focus:border-emerald-500 outline-none pb-2 transition-colors"
+                    className="w-full text-2xl md:text-3xl font-bold bg-transparent border-b-2 border-[#141414]/10 focus:border-emerald-500 outline-none pb-2 transition-colors"
                     placeholder={t('enterGoal')}
                   />
                 </div>
               ) : (
                 <div>
                   <p className="text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('calculatedGoalAmount')}</p>
-                  <p className="text-4xl font-bold text-emerald-600">
+                  <p className="text-3xl md:text-4xl font-bold text-emerald-600">
                     {formatLocal(calculatedGoal, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
                   </p>
-                  <p className="text-xs text-[#141414]/40 mt-2">
+                  <p className="text-xs text-[#141414]/40 mt-1 md:mt-2">
                     {t('calculatedGoalDesc')}
                   </p>
                 </div>
               )}
 
               {/* Progress Section */}
-              <div className="mt-10 space-y-12">
+              <div className="mt-6 md:mt-10 space-y-8 md:space-y-12">
                 {/* Milestone Progress with Badges at Ends */}
-                <div className="space-y-6">
-                  <div className="flex items-center gap-4">
+                <div className="space-y-4 md:space-y-6">
+                  <div className="flex items-center gap-3 md:gap-4">
                     {/* Current Achievement Badge (Start) */}
-                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${MILESTONES[Math.min(currentMilestoneIndex, MILESTONES.length - 1)].color} flex items-center justify-center text-white shrink-0 shadow-lg relative group`}>
-                      {React.createElement(MILESTONES[Math.min(currentMilestoneIndex, MILESTONES.length - 1)].icon, { size: 28 })}
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
-                        <CheckCircle2 size={10} className="text-white" />
+                    <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-br ${MILESTONES[Math.min(currentMilestoneIndex, MILESTONES.length - 1)].color} flex items-center justify-center text-white shrink-0 shadow-lg relative group`}>
+                      {React.createElement(MILESTONES[Math.min(currentMilestoneIndex, MILESTONES.length - 1)].icon, { size: 24 })}
+                      <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+                        <CheckCircle2 size={8} className="text-white" />
                       </div>
                       {/* Tooltip */}
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-3 bg-[#141414] text-white text-[10px] rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 shadow-xl pointer-events-none">
@@ -323,16 +323,16 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
                     </div>
 
                     {/* Next Target Badge (End) */}
-                    <div className={`w-14 h-14 rounded-2xl ${currentMilestoneIndex < MILESTONES.length - 1 ? 'bg-[#141414]/5 text-[#141414]/10' : 'bg-gradient-to-br from-red-500 to-red-700 text-white'} flex items-center justify-center shrink-0 relative group`}>
+                    <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl ${currentMilestoneIndex < MILESTONES.length - 1 ? 'bg-[#141414]/5 text-[#141414]/10' : 'bg-gradient-to-br from-red-500 to-red-700 text-white'} flex items-center justify-center shrink-0 relative group`}>
                       {currentMilestoneIndex < MILESTONES.length - 1 ? (
                         <>
-                          {React.createElement(MILESTONES[currentMilestoneIndex + 1].icon, { size: 28 })}
-                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#141414]/5 rounded-full border-2 border-white flex items-center justify-center">
-                            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                          {React.createElement(MILESTONES[currentMilestoneIndex + 1].icon, { size: 24 })}
+                          <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-[#141414]/5 rounded-full border-2 border-white flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-emerald-400 rounded-full animate-pulse" />
                           </div>
                         </>
                       ) : (
-                        <Rocket size={28} />
+                        <Rocket size={24} />
                       )}
                       {/* Tooltip */}
                       {currentMilestoneIndex < MILESTONES.length - 1 && (
@@ -346,10 +346,10 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
                   </div>
 
                   {/* Balanced Encouragement Message */}
-                  <div className="bg-emerald-50/50 p-5 rounded-3xl border border-emerald-100/50 shadow-sm">
+                  <div className="bg-emerald-50/50 p-4 md:p-5 rounded-3xl border border-emerald-100/50 shadow-sm">
                     <div className="flex items-start gap-3">
                       <div className="mt-1 flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                      <p className="text-sm font-bold text-emerald-900 leading-relaxed">
+                      <p className="text-xs md:text-sm font-bold text-emerald-900 leading-relaxed">
                         {MILESTONES[Math.min(currentMilestoneIndex, MILESTONES.length - 1)].encouragement}
                       </p>
                     </div>
@@ -357,18 +357,18 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
                 </div>
 
                 {/* All 20 Badges Grid */}
-                <div className="pt-8 border-t border-[#141414]/5">
-                  <div className="flex items-center justify-between mb-6">
-                    <h4 className="text-xs font-bold text-[#141414]/40 uppercase tracking-widest flex items-center gap-2">
+                <div className="pt-6 md:pt-8 border-t border-[#141414]/5">
+                  <div className="flex items-center justify-between mb-4 md:mb-6">
+                    <h4 className="text-[10px] md:text-xs font-bold text-[#141414]/40 uppercase tracking-widest flex items-center gap-2">
                       <Star size={14} />
                       {t('wealthAchievementBadges')}
                     </h4>
-                    <div className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold">
+                    <div className="px-2 md:px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[9px] md:text-[10px] font-bold">
                       {currentMilestoneIndex + 1} / {MILESTONES.length} {t('unlocked')}
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-10 gap-3">
+                  <div className="grid grid-cols-5 sm:grid-cols-5 md:grid-cols-10 gap-2 md:gap-3">
                     {MILESTONES.map((milestone, index) => {
                       const isAchieved = index <= currentMilestoneIndex;
                       const isNext = index === currentMilestoneIndex + 1;
@@ -424,8 +424,8 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
 
         {/* Simulation Inputs */}
         <div className="space-y-6">
-          <div className="bg-white p-8 rounded-3xl border border-[#141414]/5 shadow-sm">
-            <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+          <div className="bg-white p-5 md:p-8 rounded-3xl border border-[#141414]/5 shadow-sm">
+            <h3 className="text-base md:text-lg font-bold mb-6 flex items-center gap-2">
               <Calculator size={20} />
               {t('simulationSettings')}
             </h3>
@@ -503,9 +503,9 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
     </div>
 
     {/* Charts & Tables */}
-      <div className="grid grid-cols-1 gap-8">
-        <div className="bg-white p-8 rounded-3xl border border-[#141414]/5 shadow-sm">
-          <h3 className="text-lg font-bold mb-8 flex items-center gap-2">
+      <div className="grid grid-cols-1 gap-6 md:gap-8">
+        <div className="bg-white p-5 md:p-8 rounded-3xl border border-[#141414]/5 shadow-sm">
+          <h3 className="text-base md:text-lg font-bold mb-6 md:mb-8 flex items-center gap-2">
             <TrendingUp size={20} />
             {t('growthProjection')}
           </h3>
@@ -565,18 +565,18 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
         </div>
 
         <div className="bg-white rounded-3xl border border-[#141414]/5 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-[#141414]/5">
-            <h3 className="text-lg font-bold">{t('yearlyBreakdown')}</h3>
+          <div className="p-4 md:p-6 border-b border-[#141414]/5">
+            <h3 className="text-base md:text-lg font-bold">{t('yearlyBreakdown')}</h3>
           </div>
           <div className="overflow-x-auto max-h-[600px] custom-scrollbar relative">
             <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 z-30 bg-white">
                 <tr className="bg-[#141414]/5 text-[#141414]/50 text-[9px] md:text-[10px] font-bold uppercase tracking-widest">
-                  <th className="px-4 md:px-6 py-3 md:py-4 sticky left-0 z-40 bg-white border-b border-[#141414]/10">{t('year')}</th>
-                  <th className="px-4 md:px-6 py-3 md:py-4 border-b border-[#141414]/10">{t('portfolioValue')}</th>
-                  <th className="px-4 md:px-6 py-3 md:py-4 border-b border-[#141414]/10">{t('annualReturns')}</th>
-                  <th className="px-4 md:px-6 py-3 md:py-4 border-b border-[#141414]/10">{t('annualExpenses')}</th>
-                  <th className="px-4 md:px-6 py-3 md:py-4 border-b border-[#141414]/10">{t('status')}</th>
+                  <th className="px-3 md:px-6 py-2 md:py-4 sticky left-0 z-40 bg-white border-b border-[#141414]/10">{t('year')}</th>
+                  <th className="px-3 md:px-6 py-2 md:py-4 border-b border-[#141414]/10">{t('portfolioValue')}</th>
+                  <th className="px-3 md:px-6 py-2 md:py-4 border-b border-[#141414]/10">{t('annualReturns')}</th>
+                  <th className="px-3 md:px-6 py-2 md:py-4 border-b border-[#141414]/10">{t('annualExpenses')}</th>
+                  <th className="px-3 md:px-6 py-2 md:py-4 border-b border-[#141414]/10">{t('status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#141414]/5">
@@ -585,21 +585,21 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
                   return (
                     <tr key={row.year} className={`hover:bg-[#141414]/2 transition-colors group ${isFree ? 'bg-emerald-50/30' : ''}`}>
                       <td className={cn(
-                        "px-4 md:px-6 py-3 md:py-4 font-bold text-xs md:text-sm sticky left-0 z-20 transition-colors border-r border-[#141414]/5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
+                        "px-3 md:px-6 py-2 md:py-4 font-bold text-xs md:text-sm sticky left-0 z-20 transition-colors border-r border-[#141414]/5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
                         isFree ? "bg-emerald-50 group-hover:bg-emerald-100" : "bg-white group-hover:bg-[#F5F5F0]"
                       )}>
                         {t('yearLabel', { n: row.year.toString() })}
                       </td>
-                      <td className="px-4 md:px-6 py-3 md:py-4 font-mono text-xs md:text-sm">{formatLocal(row.portfolioValue, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</td>
-                      <td className="px-4 md:px-6 py-3 md:py-4 font-mono text-xs md:text-sm text-emerald-600 font-bold">{formatLocal(row.returns, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</td>
-                      <td className="px-4 md:px-6 py-3 md:py-4 font-mono text-xs md:text-sm text-red-500">{formatLocal(row.expenses, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</td>
-                      <td className="px-4 md:px-6 py-3 md:py-4">
+                      <td className="px-3 md:px-6 py-2 md:py-4 font-mono text-xs md:text-sm">{formatLocal(row.portfolioValue, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</td>
+                      <td className="px-3 md:px-6 py-2 md:py-4 font-mono text-xs md:text-sm text-emerald-600 font-bold">{formatLocal(row.returns, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</td>
+                      <td className="px-3 md:px-6 py-2 md:py-4 font-mono text-xs md:text-sm text-red-500">{formatLocal(row.expenses, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</td>
+                      <td className="px-3 md:px-6 py-2 md:py-4">
                         {isFree ? (
-                          <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-wider">
+                          <span className="px-1.5 py-0.5 md:px-2 md:py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[8px] md:text-[10px] font-bold uppercase tracking-wider">
                             {t('financialFree')}
                           </span>
                         ) : (
-                          <span className="px-2 py-1 bg-[#141414]/5 text-[#141414]/40 rounded-lg text-[9px] md:text-[10px] font-bold uppercase tracking-wider">
+                          <span className="px-1.5 py-0.5 md:px-2 md:py-1 bg-[#141414]/5 text-[#141414]/40 rounded-lg text-[8px] md:text-[10px] font-bold uppercase tracking-wider">
                             {t('building')}
                           </span>
                         )}

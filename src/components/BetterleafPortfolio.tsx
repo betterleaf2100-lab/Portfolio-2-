@@ -104,10 +104,10 @@ const StockTable = ({
 
   return (
     <div className="bg-white rounded-2xl border border-[#141414]/10 overflow-hidden shadow-sm relative">
-      <div className="px-4 md:px-6 py-3 md:py-4 border-b border-[#141414]/10 flex items-center justify-between bg-[#141414]/[0.02]">
+      <div className="px-3 md:px-6 py-2 md:py-4 border-b border-[#141414]/10 flex items-center justify-between bg-[#141414]/[0.02]">
         <div className="flex items-center gap-2">
           <Icon size={18} className="text-[#141414]/60" />
-          <h2 className="text-base md:text-lg font-semibold tracking-tight">{title}</h2>
+          <h2 className="text-lg md:text-lg font-semibold tracking-tight">{title}</h2>
         </div>
         <div className="flex items-center gap-4">
           {isEditing && (
@@ -142,53 +142,53 @@ const StockTable = ({
           <thead className="sticky top-0 z-30 bg-white">
             <tr className="bg-[#141414]/[0.01]">
               <th 
-                className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[110px] md:w-[240px] sticky left-0 z-40 bg-white cursor-pointer hover:text-[#141414] transition-colors"
+                className="px-2 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[80px] md:w-[240px] sticky left-0 z-40 bg-white cursor-pointer hover:text-[#141414] transition-colors"
                 onClick={() => requestSort('symbol')}
               >
                 {t('ticker')}{getSortIcon('symbol')}
               </th>
               <th 
-                className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[80px] md:w-[100px] cursor-pointer hover:text-[#141414] transition-colors"
+                className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[80px] md:w-[100px] cursor-pointer hover:text-[#141414] transition-colors"
                 onClick={() => requestSort('price')}
               >
                 {t('price')}{getSortIcon('price')}
               </th>
               <th 
-                className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[100px] md:w-[120px] cursor-pointer hover:text-[#141414] transition-colors"
+                className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[100px] md:w-[120px] cursor-pointer hover:text-[#141414] transition-colors"
                 onClick={() => requestSort('marketCap')}
               >
                 {t('marketCap')}{getSortIcon('marketCap')}
               </th>
               {showWeight && (
                 <th 
-                  className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[80px] md:w-[100px] cursor-pointer hover:text-[#141414] transition-colors"
+                  className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[80px] md:w-[100px] cursor-pointer hover:text-[#141414] transition-colors"
                   onClick={() => requestSort('weight')}
                 >
                   {t('weight')}{getSortIcon('weight')}
                 </th>
               )}
               <th 
-                className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[80px] md:w-[100px] cursor-pointer hover:text-[#141414] transition-colors"
+                className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[80px] md:w-[100px] cursor-pointer hover:text-[#141414] transition-colors"
                 onClick={() => requestSort('upside')}
               >
                 {t('upside')}{getSortIcon('upside')}
               </th>
               {category === 'watchlist' && (
                 <th 
-                  className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[100px] md:w-[120px] cursor-pointer hover:text-[#141414] transition-colors"
+                  className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[100px] md:w-[120px] cursor-pointer hover:text-[#141414] transition-colors"
                   onClick={() => requestSort('operationType')}
                 >
                   {t('operation')}{getSortIcon('operationType')}
                 </th>
               )}
               <th 
-                className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[80px] md:w-[100px] cursor-pointer hover:text-[#141414] transition-colors"
+                className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[80px] md:w-[100px] cursor-pointer hover:text-[#141414] transition-colors"
                 onClick={() => requestSort('forwardPe')}
               >
                 {t('fwdPe')}{getSortIcon('forwardPe')}
               </th>
-              <th className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 min-w-[200px]">{t('thesis')}</th>
-              {isEditing && <th className="px-4 md:px-6 py-2 md:py-3 text-[10px] md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[70px] md:w-[80px]">{t('actions')}</th>}
+              <th className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 min-w-[200px]">{t('thesis')}</th>
+              {isEditing && <th className="px-4 md:px-6 py-2 md:py-3 text-xs md:text-[11px] font-serif italic uppercase tracking-wider text-[#141414]/50 border-b border-[#141414]/10 w-[70px] md:w-[80px]">{t('actions')}</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-[#141414]/5">
@@ -204,7 +204,7 @@ const StockTable = ({
                 key={rowId} 
                 className={`group transition-colors cursor-default relative ${isLocked ? 'bg-[#141414]/[0.01] overflow-hidden' : 'hover:bg-[#141414]/[0.02]'}`}
               >
-                <td className="px-4 md:px-6 py-3 md:py-4 sticky left-0 z-20 bg-white group-hover:bg-[#F5F5F0] transition-colors border-r border-[#141414]/5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] w-[110px] md:w-[240px]">
+                <td className="px-2 md:px-6 py-3 md:py-4 sticky left-0 z-20 bg-white group-hover:bg-[#F5F5F0] transition-colors border-r border-[#141414]/5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] w-[80px] md:w-[240px]">
                   {isLocked && (
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:animate-shimmer pointer-events-none z-0" />
                   )}
@@ -230,7 +230,7 @@ const StockTable = ({
                             setEditingData(prev => prev.map(d => d.id === stock.id ? { ...d, name: e.target.value } : d));
                           }}
                           placeholder={t('namePlaceholder')}
-                          className="bg-white border border-[#141414]/10 rounded-lg px-2 py-1 text-[10px] w-full focus:ring-2 focus:ring-emerald-500 outline-none"
+                          className="bg-white border border-[#141414]/10 rounded-lg px-2 py-1 text-xs w-full focus:ring-2 focus:ring-emerald-500 outline-none"
                         />
                       </div>
                     ) : (
@@ -253,9 +253,9 @@ const StockTable = ({
                             </a>
                           </div>
                         ) : (
-                          <span className="text-sm font-bold text-[#141414] group-hover:text-emerald-600 transition-colors">{stock.symbol}</span>
+                          <span className="text-xs md:text-sm font-bold text-[#141414] group-hover:text-emerald-600 transition-colors">{stock.symbol}</span>
                         )}
-                        <span className={`text-[11px] text-[#141414]/40 font-medium ${isLocked ? 'blur-[4px] select-none opacity-30' : ''}`}>
+                        <span className={`text-xs md:text-[11px] text-[#141414]/40 font-medium ${isLocked ? 'blur-[4px] select-none opacity-30' : ''}`}>
                           {isLocked ? t('hiddenCompany') : displayName}
                         </span>
                       </div>

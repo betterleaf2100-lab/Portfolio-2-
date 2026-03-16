@@ -853,55 +853,55 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
   };
 
   return (
-    <div className="space-y-6 md:space-y-8 pb-20">
+    <div className="space-y-4 md:space-y-8 pb-20">
       {/* Header & Inputs */}
-      <div className="space-y-6 md:space-y-8">
-        <div className="bg-white p-5 md:p-8 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-6 md:mb-8">
-            <h2 className="text-xl md:text-2xl font-bold flex items-center gap-3">
+      <div className="space-y-4 md:space-y-8">
+        <div className="bg-white p-4 md:p-8 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-4 md:mb-8">
+            <h2 className="text-lg md:text-2xl font-bold flex items-center gap-3">
               <Calculator className="text-emerald-600" size={24} />
               {t('investmentPlannerTitle')}
             </h2>
             <div className="bg-[#141414] text-white px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl flex items-center justify-between md:justify-start gap-4">
-              <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest opacity-40">{t('totalInvestmentEstimated')}</span>
-              <span className="text-xl md:text-2xl font-bold">{formatLocal(totalInvestment, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</span>
+              <span className="text-xs md:text-[10px] font-bold uppercase tracking-widest opacity-40">{t('totalInvestmentEstimated')}</span>
+              <span className="text-lg md:text-2xl font-bold">{formatLocal(totalInvestment, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-            <div className="space-y-3 md:space-y-4">
-              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1 block">{t('monthlyContributionLabel')}</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+            <div className="space-y-2 md:space-y-4">
+              <label className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1 block">{t('monthlyContributionLabel')}</label>
               <div className="relative">
-                <span className="absolute left-0 bottom-2 text-xl md:text-2xl font-bold text-[#141414]/20">{currencySymbol}</span>
+                <span className="absolute left-0 bottom-2 text-lg md:text-2xl font-bold text-[#141414]/20">{currencySymbol}</span>
                 <input 
                   type="number"
                   value={monthlyContribution}
                   onChange={(e) => onMonthlyContributionChange(Number(e.target.value))}
-                  className="w-full text-3xl md:text-4xl font-bold bg-transparent border-b-2 border-[#141414]/10 focus:border-emerald-500 outline-none pb-2 pl-20 transition-colors"
+                  className="w-full text-2xl md:text-4xl font-bold bg-transparent border-b-2 border-[#141414]/10 focus:border-emerald-500 outline-none pb-2 pl-16 md:pl-20 transition-colors"
                 />
               </div>
-              <p className="text-[10px] md:text-xs text-[#141414]/40">{t('monthlyContributionSyncDesc')}</p>
+              <p className="text-xs md:text-xs text-[#141414]/40">{t('monthlyContributionSyncDesc')}</p>
             </div>
 
-            <div className="space-y-3 md:space-y-4">
-              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1 block">{t('lumpSumLabel')}</label>
+            <div className="space-y-2 md:space-y-4">
+              <label className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1 block">{t('lumpSumLabel')}</label>
               <div className="relative">
-                <span className="absolute left-0 bottom-2 text-xl md:text-2xl font-bold text-[#141414]/20">{currencySymbol}</span>
+                <span className="absolute left-0 bottom-2 text-lg md:text-2xl font-bold text-[#141414]/20">{currencySymbol}</span>
                 <input 
                   type="number"
                   value={lumpSum}
                   onChange={(e) => setLumpSum(Number(e.target.value))}
-                  className="w-full text-3xl md:text-4xl font-bold bg-transparent border-b-2 border-[#141414]/10 focus:border-emerald-500 outline-none pb-2 pl-20 transition-colors"
+                  className="w-full text-2xl md:text-4xl font-bold bg-transparent border-b-2 border-[#141414]/10 focus:border-emerald-500 outline-none pb-2 pl-16 md:pl-20 transition-colors"
                   placeholder="0"
                 />
               </div>
-              <p className="text-[10px] md:text-xs text-[#141414]/40">{t('lumpSumDesc')}</p>
+              <p className="text-xs md:text-xs text-[#141414]/40">{t('lumpSumDesc')}</p>
             </div>
           </div>
 
-          <div className="mt-12">
+          <div className="mt-8 md:mt-12">
             <div className="flex items-center justify-between mb-4">
-              <label className="text-[10px] text-[#141414]/40 uppercase font-bold block">{t('riskPreferenceLabel')}</label>
+              <label className="text-xs text-[#141414]/40 uppercase font-bold block">{t('riskPreferenceLabel')}</label>
               {userData?.role === 'admin' && (
                 <button 
                   onClick={() => {
@@ -916,7 +916,7 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
                       setIsEditingProfiles(true);
                     }
                   }}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-[#141414]/5 hover:bg-[#141414]/10 rounded-xl text-[10px] font-bold transition-all"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-[#141414]/5 hover:bg-[#141414]/10 rounded-xl text-xs font-bold transition-all"
                 >
                   {isEditingProfiles ? <X size={12} /> : <Edit2 size={12} />}
                   {isEditingProfiles ? t('cancelEdit') : t('editDefaultProfiles')}
@@ -925,9 +925,9 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
             </div>
 
             {isEditingProfiles ? (
-              <div className="space-y-6 bg-[#141414]/[0.02] p-6 rounded-3xl border border-dashed border-[#141414]/10">
+              <div className="space-y-4 md:space-y-6 bg-[#141414]/[0.02] p-4 md:p-6 rounded-3xl border border-dashed border-[#141414]/10">
                 {editingProfiles.filter(p => p.id !== 'custom').map((profile, pIdx) => (
-                  <div key={profile.id} className="space-y-4">
+                  <div key={profile.id} className="space-y-3 md:space-y-4">
                     <div className="flex items-center gap-2">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-white shadow-sm ${profile.color}`}>
                         <profile.icon size={16} />
@@ -964,7 +964,7 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
                               }}
                               className="w-full bg-white border border-[#141414]/10 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 pr-6"
                             />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#141414]/20">%</span>
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-[#141414]/20">%</span>
                           </div>
                           <button 
                             onClick={() => {
@@ -988,13 +988,13 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
                           };
                           setEditingProfiles(newProfiles);
                         }}
-                        className="flex items-center justify-center gap-2 py-2 border border-dashed border-[#141414]/10 rounded-xl text-[10px] font-bold text-[#141414]/40 hover:bg-white transition-all"
+                        className="flex items-center justify-center gap-2 py-2 border border-dashed border-[#141414]/10 rounded-xl text-xs font-bold text-[#141414]/40 hover:bg-white transition-all"
                       >
                         <Plus size={12} />
                         {t('addTicker')}
                       </button>
                     </div>
-                    <div className={`text-[10px] font-bold px-2 py-1 rounded-lg inline-block ${
+                    <div className={`text-xs font-bold px-2 py-1 rounded-lg inline-block ${
                       Math.abs(profile.allocations.reduce((s, a) => s + a.weight, 0) - 1) < 0.001 
                         ? 'bg-emerald-50 text-emerald-600' 
                         : 'bg-red-50 text-red-600'
@@ -1028,13 +1028,13 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
                         : 'border-[#141414]/5 hover:border-[#141414]/10 bg-white'
                     }`}
                   >
-                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl mb-3 md:mb-4 flex items-center justify-center ${
+                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl mb-2 md:mb-4 flex items-center justify-center ${
                       riskId === profile.id ? 'bg-emerald-600 text-white' : 'bg-[#141414]/5 text-[#141414]/40'
                     }`}>
                       <profile.icon size={18} />
                     </div>
                     <h4 className="font-bold text-xs md:text-sm mb-1">{t(profile.name)}</h4>
-                    <p className="text-[9px] md:text-[10px] text-[#141414]/40 leading-tight md:leading-relaxed">{t(profile.description)}</p>
+                    <p className="text-xs md:text-[10px] text-[#141414]/40 leading-tight md:leading-relaxed">{t(profile.description)}</p>
                   </button>
                 ))}
               </div>
@@ -1158,27 +1158,27 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
 
       {/* Allocation Table */}
       <div className="bg-white rounded-3xl border border-[#141414]/5 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-[#141414]/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-4 md:p-8 border-b border-[#141414]/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-lg font-bold">{t('copyPortfolioAllocation')}</h3>
+            <h3 className="text-base md:text-lg font-bold">{t('copyPortfolioAllocation')}</h3>
             <p className="text-xs text-[#141414]/40 mt-1">{t('basedOnRiskDesc')}</p>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 md:gap-6">
             <div className="text-right">
-              <p className="text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('riskLevel')}</p>
+              <p className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('riskLevel')}</p>
               <p className={`text-sm font-bold ${currentProfile.color}`}>{t(currentProfile.name)}</p>
             </div>
             <div className="w-px h-8 bg-[#141414]/5" />
             <div className="text-right">
-              <p className="text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('totalInvestmentAmount')}</p>
-              <p className="text-xl font-bold text-emerald-600">{formatLocal(totalInvestment, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</p>
+              <p className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('totalInvestmentAmount')}</p>
+              <p className="text-lg md:text-xl font-bold text-emerald-600">{formatLocal(totalInvestment, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</p>
             </div>
           </div>
         </div>
         <div className="overflow-x-auto max-h-[600px] custom-scrollbar relative">
           <table className="w-full text-left border-collapse">
             <thead className="sticky top-0 z-30 bg-white">
-              <tr className="bg-[#141414]/5 text-[#141414]/50 text-[9px] md:text-[10px] font-bold uppercase tracking-widest">
+              <tr className="bg-[#141414]/5 text-[#141414]/50 text-xs md:text-[10px] font-bold uppercase tracking-widest">
                 <th className="px-4 md:px-6 py-3 md:py-4 sticky left-0 z-40 bg-white border-b border-[#141414]/10 w-[110px] md:w-[240px]">{t('tickerWithLabel')}</th>
                 <th className="px-4 md:px-6 py-3 md:py-4 border-b border-[#141414]/10">{t('allocationRatio')}</th>
                 <th className="px-4 md:px-6 py-3 md:py-4 border-b border-[#141414]/10">{t('estimatedCost')}</th>
