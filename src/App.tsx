@@ -310,7 +310,7 @@ export default function App() {
         return;
       }
       // Update local credits optimistically or wait for sync
-      setUserData(prev => prev ? { ...prev, credits: prev.credits - COST_PER_USE } : null);
+      setUserData(prev => prev ? { ...prev, portfolio_credits: prev.portfolio_credits - 2 } : null);
     }
 
     setIsUploading(true);
@@ -632,12 +632,12 @@ export default function App() {
     
     // Only deduct credits if NOT an auto-refresh and NOT an admin
     if (!isAuto && userData && userData.role !== 'admin') {
-      const success = await deductCredits(user!.uid);
+      const success = await deductCredits(user!.uid, 1);
       if (!success) {
         setShowUpsell(true);
         return;
       }
-      setUserData(prev => prev ? { ...prev, credits: prev.credits - 1 } : null);
+      setUserData(prev => prev ? { ...prev, portfolio_credits: prev.portfolio_credits - 1 } : null);
     }
 
     setIsUploading(true);
@@ -873,7 +873,7 @@ export default function App() {
                 <div className="flex items-center gap-2">
                   {userData?.role === 'vip' && <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-bold rounded uppercase">VIP</span>}
                   {userData?.role === 'admin' && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-bold rounded uppercase">Admin</span>}
-                  <span className="text-[10px] font-bold text-[#141414]/40 uppercase tracking-widest">{t('credits')}: {userData?.credits}</span>
+                  <span className="text-[10px] font-bold text-[#141414]/40 uppercase tracking-widest">{t('portfolio_credits')}: {userData?.portfolio_credits}</span>
                 </div>
                 <span className="text-xs font-medium text-[#141414]">{user?.email}</span>
               </div>
@@ -951,9 +951,9 @@ export default function App() {
                   
                   <div className="flex items-center justify-between pt-4 border-t border-[#141414]/10">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-[#141414]/40 uppercase tracking-widest">{t('credits')}</span>
+                      <span className="text-[10px] font-bold text-[#141414]/40 uppercase tracking-widest">{t('portfolio_credits')}</span>
                     </div>
-                    <span className="text-sm font-bold">{userData?.credits}</span>
+                    <span className="text-sm font-bold">{userData?.portfolio_credits}</span>
                   </div>
                 </div>
 
@@ -1782,12 +1782,12 @@ export default function App() {
               currentPortfolioValue={totalValue} 
               monthlyContribution={monthlyContribution}
               onMonthlyContributionChange={setMonthlyContribution}
-              credits={userData?.credits || 0}
+              portfolio_credits={userData?.portfolio_credits || 0}
               onDeductCredits={async () => {
                 if (userData && userData.role !== 'admin' && user) {
                   const success = await deductCredits(user.uid);
                   if (success) {
-                    setUserData(prev => prev ? { ...prev, credits: prev.credits - 1 } : null);
+                    setUserData(prev => prev ? { ...prev, portfolio_credits: prev.portfolio_credits - 2 } : null);
                   } else {
                     setShowUpsell(true);
                     throw new Error("Insufficient credits");

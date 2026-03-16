@@ -93,9 +93,25 @@
         "updatedAt": { "type": "string" },
         "timestamp": { "type": "string", "format": "date-time" }
       }
+    },
+    "User": {
+      "title": "User Profile",
+      "description": "Core user profile data including role and credits.",
+      "type": "object",
+      "properties": {
+        "portfolio_credits": { "type": "integer" },
+        "role": { "type": "string", "enum": ["admin", "vip", "student", "trial"] },
+        "email": { "type": "string", "format": "email" },
+        "last_reset_date": { "type": "string", "description": "YYYY-MM-DD" }
+      },
+      "required": ["portfolio_credits", "role", "email", "last_reset_date"]
     }
   },
   "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Core user profile document."
+    },
     "/apps/{appId}/global/holding": {
       "schema": "PortfolioDoc",
       "description": "Publicly visible holding list."

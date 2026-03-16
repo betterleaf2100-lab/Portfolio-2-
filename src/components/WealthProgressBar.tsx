@@ -60,7 +60,7 @@ interface WealthProgressBarProps {
   currentPortfolioValue: number;
   monthlyContribution: number;
   onMonthlyContributionChange: (val: number) => void;
-  credits: number;
+  portfolio_credits: number;
   onDeductCredits: () => Promise<void>;
   role?: string;
 }
@@ -69,7 +69,7 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
   currentPortfolioValue,
   monthlyContribution,
   onMonthlyContributionChange,
-  credits,
+  portfolio_credits,
   onDeductCredits,
   role
 }) => {

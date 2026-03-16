@@ -19,7 +19,7 @@ export const translations: Translations = {
   currency: { 'zh-TW': '貨幣', 'zh-CN': '货币', 'en': 'Currency' },
   language: { 'zh-TW': '語言', 'zh-CN': '语言', 'en': 'Language' },
   logout: { 'zh-TW': '登出', 'zh-CN': '登出', 'en': 'Logout' },
-  credits: { 'zh-TW': '額度', 'zh-CN': '额度', 'en': 'Credits' },
+  portfolio_credits: { 'zh-TW': '額度', 'zh-CN': '额度', 'en': 'Credits' },
   publishGlobal: { 'zh-TW': '發佈到全局', 'zh-CN': '发布到全局', 'en': 'Publish to Global' },
   refreshData: { 'zh-TW': '刷新市場數據', 'zh-CN': '刷新市场数据', 'en': 'Refresh Market Data' },
   betaWeighted: { 'zh-TW': '貝塔加權', 'zh-CN': '贝塔加权', 'en': 'Beta Weighted' },

@@ -10,11 +10,19 @@ service cloud.firestore {
       return isAuthenticated() && 
         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
          request.auth.uid == "zKV67M5hJRdh07GawmTZSJtxKA92" ||
-         request.auth.token.email == "greenteaboys2100@gmail.com");
+         request.auth.token.email == "betterleaf2100@gmail.com");
     }
     
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasOnly(['portfolio_credits', 'role', 'email', 'last_reset_date']) &&
+             (data.portfolio_credits is int) &&
+             (data.role in ['admin', 'vip', 'student', 'trial']) &&
+             (data.email is string) &&
+             (data.last_reset_date is string);
     }
 
     function isValidUserSettings(data) {
@@ -33,7 +41,8 @@ service cloud.firestore {
     // User profiles
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow write: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data)) || isAdmin();
       
       match /settings/{configId} {
         allow read: if isOwner(userId) || isAdmin();
@@ -60,6 +69,11 @@ service cloud.firestore {
     // App settings (Risk Profiles, etc.)
     match /apps/{appId} {
       allow read, write: if isAuthenticated(); 
+      
+      match /Planner/{riskId}/Data/{dataId} {
+        allow read, write: if isAuthenticated();
+      }
+
       match /global/{document=**} {
         allow read: if isAuthenticated();
       }

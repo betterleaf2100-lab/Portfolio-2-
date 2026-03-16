@@ -12,7 +12,7 @@ import { db } from "./firebase";
 export const APP_ID = "portfolio_manager_2026";
 export const UPSELL_LINK = "https://school.betterleaf.co/mvi-course";
 export const STUDENT_UPSELL_LINK = "https://betterleaf.co/checkout-aitools-subscription";
-export const COST_PER_USE = 1;
+export const COST_PER_USE = 2;
 
 export function getUpsellLink(role?: string) {
   if (role === 'student') return STUDENT_UPSELL_LINK;
@@ -25,7 +25,7 @@ export const STUDENT_TRIAL_LIMIT = 30;
 export type UserRole = 'admin' | 'vip' | 'student' | 'trial';
 
 export interface UserData {
-  credits: number;
+  portfolio_credits: number;
   role: UserRole;
   email: string;
   last_reset_date: string; // YYYY-MM-DD
@@ -68,15 +68,15 @@ export async function syncUserRoleAndCredits(uid: string, email: string): Promis
   if (!userSnap.exists()) {
     // New User Initialization
     userData = {
-      credits: STUDENT_TRIAL_LIMIT,
+      portfolio_credits: STUDENT_TRIAL_LIMIT,
       role: role,
       email: email,
       last_reset_date: today
     };
     await setDoc(userRef, userData);
   } else {
-    const currentData = userSnap.data() as UserData;
-    let newCredits = currentData.credits;
+    const currentData = userSnap.data() as any;
+    let newCredits = currentData.portfolio_credits ?? currentData.credits ?? STUDENT_TRIAL_LIMIT;
     
     // Credit Logic
     if (role === 'admin') {
@@ -95,14 +95,15 @@ export async function syncUserRoleAndCredits(uid: string, email: string): Promis
 
     userData = {
       ...currentData,
-      credits: newCredits,
+      portfolio_credits: newCredits,
       role: role,
       email: email,
       last_reset_date: today
     };
     
+    // Remove old field if it exists and update new field
     await updateDoc(userRef, {
-      credits: newCredits,
+      portfolio_credits: newCredits,
       role: role,
       last_reset_date: today
     });
@@ -114,8 +115,8 @@ export async function syncUserRoleAndCredits(uid: string, email: string): Promis
 /**
  * Step C: Deduction (Atomic Transaction)
  */
-export async function deductCredits(uid: string): Promise<boolean> {
-  console.log(`[Firestore] Attempting to deduct credits for UID: ${uid}`);
+export async function deductCredits(uid: string, amount: number = COST_PER_USE): Promise<boolean> {
+  console.log(`[Firestore] Attempting to deduct ${amount} credits for UID: ${uid}`);
   const userRef = doc(db, "users", uid);
 
   try {
@@ -127,12 +128,12 @@ export async function deductCredits(uid: string): Promise<boolean> {
       
       if (data.role === 'admin') return true;
 
-      if (data.credits < COST_PER_USE) {
+      if (data.portfolio_credits < amount) {
         return false;
       }
 
       transaction.update(userRef, {
-        credits: data.credits - COST_PER_USE
+        portfolio_credits: data.portfolio_credits - amount
       });
       return true;
     });

@@ -252,7 +252,7 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
   useEffect(() => {
     const ids: ('conservative' | 'moderate' | 'aggressive')[] = ['conservative', 'moderate', 'aggressive'];
     const unsubscribes = ids.map(id => {
-      const profileRef = doc(db, "Planner", id, "Data", "allocation");
+      const profileRef = doc(db, "apps", "portfolio_manager_2026", "Planner", id, "Data", "allocation");
       return onSnapshot(profileRef, (snap) => {
         if (snap.exists()) {
           const data = snap.data();
@@ -329,29 +329,12 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
     }
   };
 
-  // Load custom allocations from Firestore
+  // Handle isBacktested state when editing custom allocations
   useEffect(() => {
-    if (user?.uid) {
-      const customRef = doc(db, "users", user.uid, "Planner", "Custom");
-      getDoc(customRef).then(snap => {
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.allocations) {
-            setCustomAllocations(data.allocations);
-            setAppliedCustomAllocations(data.allocations);
-          }
-        }
-      });
+    if (riskId === 'custom') {
+      setIsBacktested(false);
     }
-  }, [user?.uid]);
-
-  // Save custom allocations when they change
-  useEffect(() => {
-    if (user?.uid && riskId === 'custom') {
-      const customRef = doc(db, "users", user.uid, "Planner", "Custom");
-      setDoc(customRef, { allocations: customAllocations }, { merge: true });
-    }
-  }, [customAllocations, user?.uid, riskId]);
+  }, [customAllocations, riskId]);
 
   // Fetch market data and historical data with cache
   useEffect(() => {
@@ -371,40 +354,44 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
       setIsLoading(true);
       console.log(`[Planner] Processing riskId: ${riskId}`);
       const today = new Date().toISOString().split('T')[0];
+      
+      // Corrected paths based on actual Firebase structure
       const cacheRef = riskId === 'custom' 
-        ? doc(db, "users", user?.uid || "anon", "Planner", "Custom_History")
-        : doc(db, "Planner", riskId, "Data", "graph_data");
+        ? null
+        : doc(db, "apps", "portfolio_manager_2026", "Planner", riskId, "Data", "graph_data");
 
       try {
-        const cacheSnap = await getDoc(cacheRef);
-        if (cacheSnap.exists()) {
-          const cacheData = cacheSnap.data();
-          // Check if today and if symbols match
-          const cacheSymbols = cacheData.symbols || [];
-          const symbolsMatch = JSON.stringify([...cacheSymbols].sort()) === JSON.stringify([...symbols].sort());
-          
-          if (cacheData.updatedAt === today && symbolsMatch) {
-            console.log(`Using cached data for ${riskId}`);
-            setMarketData(cacheData.marketData);
+        if (cacheRef) {
+          const cacheSnap = await getDoc(cacheRef);
+          if (cacheSnap.exists()) {
+            const cacheData = cacheSnap.data();
+            // Check if today and if symbols match
+            const cacheSymbols = cacheData.symbols || [];
+            const symbolsMatch = JSON.stringify([...cacheSymbols].sort()) === JSON.stringify([...symbols].sort());
             
-            // Handle decompression if data is compressed
-            let parsedAllData;
-            if (typeof cacheData.allData === 'string') {
-              // Try decompressing first, if it fails or returns null, try normal JSON parse
-              const decompressed = LZString.decompressFromUTF16(cacheData.allData);
-              if (decompressed) {
-                parsedAllData = JSON.parse(decompressed);
+            if (cacheData.updatedAt === today && symbolsMatch) {
+              console.log(`Using cached data for ${riskId}`);
+              setMarketData(cacheData.marketData);
+              
+              // Handle decompression if data is compressed
+              let parsedAllData;
+              if (typeof cacheData.allData === 'string') {
+                // Try decompressing first, if it fails or returns null, try normal JSON parse
+                const decompressed = LZString.decompressFromUTF16(cacheData.allData);
+                if (decompressed) {
+                  parsedAllData = JSON.parse(decompressed);
+                } else {
+                  parsedAllData = JSON.parse(cacheData.allData);
+                }
               } else {
-                parsedAllData = JSON.parse(cacheData.allData);
+                parsedAllData = cacheData.allData;
               }
-            } else {
-              parsedAllData = cacheData.allData;
+              
+              setAllData(parsedAllData);
+              setIsBacktested(true);
+              setIsLoading(false);
+              return;
             }
-            
-            setAllData(parsedAllData);
-            setIsBacktested(true);
-            setIsLoading(false);
-            return;
           }
         }
 
@@ -443,8 +430,8 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
             setAllData(newAllData);
             setIsBacktested(true);
 
-            // Update cache
-            if (riskId !== 'custom') {
+            // Update cache ONLY for non-custom
+            if (cacheRef && riskId !== 'custom') {
               console.log(`Attempting to update cache at: ${cacheRef.path}`);
               const compressedData = LZString.compressToUTF16(JSON.stringify(newAllData));
               
@@ -467,25 +454,74 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
       }
     };
 
-    fetchAndCache();
-  }, [activeAllocations, riskId, user?.uid]);
+    if (riskId !== 'custom') {
+      fetchAndCache();
+    }
+  }, [activeAllocations, riskId]);
 
   // Handle isBacktested state when editing custom allocations
   useEffect(() => {
     if (riskId === 'custom') {
-      // Use a more robust comparison for allocations
-      const normalize = (allocs: Allocation[]) => 
-        JSON.stringify(allocs.map(a => ({ symbol: a.symbol, weight: Number(a.weight.toFixed(4)) })));
-      
-      const isSame = normalize(customAllocations) === normalize(appliedCustomAllocations);
-      
-      if (!isSame && isBacktested) {
-        setIsBacktested(false);
-      } else if (isSame && appliedCustomAllocations.length > 0 && !isBacktested && !isLoading) {
-        setIsBacktested(true);
-      }
+      setIsBacktested(false);
     }
-  }, [customAllocations, appliedCustomAllocations, riskId, isBacktested, isLoading]);
+  }, [customAllocations, riskId]);
+
+  const handleBacktest = async () => {
+    if (!user || !userData) return;
+    
+    // Credit Check & Deduction
+    if (userData.role !== 'admin') {
+      const success = await deductCredits(user.uid);
+      if (!success) {
+        setShowUpsell(true);
+        return;
+      }
+      setUserData(prev => prev ? { ...prev, portfolio_credits: prev.portfolio_credits - 2 } : null);
+    }
+
+    const symbols = customAllocations.map(a => a.symbol).filter(s => s !== '');
+    if (symbols.length === 0) return;
+    
+    const allSymbols = [...symbols, 'SPY'];
+    setIsLoading(true);
+    setIsBacktested(false);
+
+    try {
+      console.log(`[Custom Backtest] Fetching data for: ${allSymbols.join(',')}`);
+      const [marketRes, historicalRes] = await Promise.all([
+        fetchMarketData(symbols),
+        fetch(`/api/historical-data?symbols=${allSymbols.join(',')}&period=max`).then(r => r.json())
+      ]);
+
+      if (marketRes.data && Array.isArray(historicalRes)) {
+        const dateMap: Record<string, any> = {};
+        historicalRes.forEach((item: any) => {
+          if (item.data && Array.isArray(item.data)) {
+            item.data.forEach((d: any) => {
+              const date = new Date(d.date).toISOString().split('T')[0];
+              if (!dateMap[date]) dateMap[date] = { date };
+              dateMap[date][item.symbol] = d.adjClose || d.close;
+            });
+          }
+        });
+
+        const sortedDates = Object.keys(dateMap)
+          .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+          .filter(date => allSymbols.every(s => dateMap[date][s] !== undefined));
+
+        if (sortedDates.length > 0) {
+          setMarketData(marketRes.data);
+          setAllData({ dateMap, sortedDates });
+          setAppliedCustomAllocations([...customAllocations]);
+          setIsBacktested(true);
+        }
+      }
+    } catch (err) {
+      console.error("Custom backtest failed:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Process data based on timeRange
   useEffect(() => {
@@ -708,21 +744,7 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
   }, [annualReturns, stats, isProjected, projectedAnnualReturns, isWeightValid]);
 
 
-  const handleBacktest = async () => {
-    if (!user || !userData) return;
-    
-    if (userData.role !== 'admin') {
-      const success = await deductCredits(user.uid);
-      if (!success) {
-        setShowUpsell(true);
-        return;
-      }
-      setUserData(prev => prev ? { ...prev, credits: prev.credits - 1 } : null);
-    }
-    
-    setAppliedCustomAllocations([...customAllocations]);
-    setIsBacktested(true);
-  };
+
 
   const handleStartProjection = async () => {
     if (!stats || !user || !userData) return;
@@ -734,7 +756,7 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
         setShowUpsell(true);
         return;
       }
-      setUserData(prev => prev ? { ...prev, credits: prev.credits - 1 } : null);
+      setUserData(prev => prev ? { ...prev, portfolio_credits: prev.portfolio_credits - 2 } : null);
     }
 
     setIsProjecting(true);
