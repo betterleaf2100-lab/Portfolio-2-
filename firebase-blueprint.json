@@ -1,0 +1,120 @@
+{
+  "entities": {
+    "PortfolioDoc": {
+      "title": "Portfolio Document",
+      "description": "A document containing a list of stock items for either holdings or watchlist.",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "StockItem"
+          }
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string"
+        }
+      },
+      "required": ["items", "updatedAt"]
+    },
+    "StockItem": {
+      "title": "Stock Item",
+      "description": "Details of a single stock in the portfolio or watchlist.",
+      "type": "object",
+      "properties": {
+        "symbol": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "marketCap": { "type": "string" },
+        "weight": { "type": "number" },
+        "upside": { "type": "number" },
+        "forwardPe": { "type": "number" },
+        "thesis": { "type": "string" },
+        "category": { "type": "string", "enum": ["holding", "watchlist"] },
+        "operationType": { "type": "string" }
+      },
+      "required": ["symbol", "name", "price", "category"]
+    },
+    "UserSettings": {
+      "title": "User Settings",
+      "description": "Personalized settings for the user including UI preferences and simulation parameters.",
+      "type": "object",
+      "properties": {
+        "currency": { "type": "string", "enum": ["USD", "TWD", "HKD", "CNY", "MYR", "SGD", "JPY", "EUR", "GBP"] },
+        "language": { "type": "string", "enum": ["zh", "en"] },
+        "simulationParams": {
+          "type": "object",
+          "properties": {
+            "annualReturn": { "type": "number" },
+            "years": { "type": "number" },
+            "monthlyExpenses": { "type": "number" },
+            "monthlyInvestment": { "type": "number" },
+            "inflationRate": { "type": "number" },
+            "manualGoal": { "type": ["number", "null"] },
+            "useCalculatedGoal": { "type": "boolean" }
+          }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "RiskProfileConfig": {
+      "title": "Risk Profile Config",
+      "description": "Allocations for a risk profile.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "allocations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "symbol": { "type": "string" },
+              "weight": { "type": "number" },
+              "name": { "type": "string" }
+            }
+          }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string" }
+      }
+    },
+    "RiskProfileHistory": {
+      "title": "Risk Profile History",
+      "description": "Historical data and market data for a risk profile.",
+      "type": "object",
+      "properties": {
+        "marketData": { "type": "array" },
+        "allData": { "type": "string", "description": "Compressed JSON string of historical data." },
+        "symbols": { "type": "array", "items": { "type": "string" } },
+        "updatedAt": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/apps/{appId}/global/holding": {
+      "schema": "PortfolioDoc",
+      "description": "Publicly visible holding list."
+    },
+    "/apps/{appId}/global/watchlist": {
+      "schema": "PortfolioDoc",
+      "description": "Publicly visible watchlist."
+    },
+    "/Planner/{riskId}/Data/allocation": {
+      "schema": "RiskProfileConfig",
+      "description": "Allocations for a specific risk profile."
+    },
+    "/Planner/{riskId}/Data/graph_data": {
+      "schema": "RiskProfileHistory",
+      "description": "Historical trend data for a specific risk profile."
+    },
+    "/users/{userId}/settings/config": {
+      "schema": "UserSettings",
+      "description": "User-specific configuration and simulation parameters."
+    }
+  }
+}
