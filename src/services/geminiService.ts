@@ -35,7 +35,7 @@ export const extractPortfolioFromImage = async (base64Image: string) => {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
   
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-flash-lite-preview",
+    model: "gemini-3-flash-preview",
     contents: [
       {
         parts: [
@@ -110,7 +110,7 @@ export const fetchMarketData = async (symbols: string[]) => {
     console.log("[API] Falling back to Gemini for market data...");
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
     const geminiResponse = await ai.models.generateContent({
-      model: "gemini-3.1-flash-lite-preview",
+      model: "gemini-3-flash-preview",
       contents: `For the following stock symbols, provide the average of their current Forward P/E Ratio and Trailing P/E Ratio (PE Ratio), daily change percentage (regularMarketChangePercent), current market price in USD, and Market Cap (formatted as 1.2T, 500B, etc.). Symbols: ${symbols.join(', ')}. Return the average P/E in the 'forwardPe' field and daily change in 'changePercent'. Also provide the current price of SPY.`,
       config: {
         responseMimeType: "application/json",
@@ -160,7 +160,7 @@ export const analyzePortfolio = async (portfolio: PortfolioItem[]) => {
     }));
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
+    model: "gemini-3-flash-preview",
     contents: `As a professional investment advisor, analyze the following investment portfolio and provide a detailed report in Traditional Chinese (繁體中文). 
 
 Portfolio Data:
@@ -190,7 +190,7 @@ export const getAIProjectionParams = async (portfolio: Allocation[], stats: any)
   console.log("[API] Calling Gemini to get AI projection parameters...");
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
   
-  const prompt = `As an AI financial analyst, analyze this investment portfolio and its historical performance to provide parameters for a 10-year Monte Carlo simulation.
+  const prompt = `As an expert AI financial strategist and macroeconomist, analyze this investment portfolio and its historical performance to provide parameters for a sophisticated 10-year Monte Carlo growth simulation.
 
 Portfolio Allocations:
 ${JSON.stringify(portfolio, null, 2)}
@@ -203,9 +203,9 @@ Historical Performance (Last 10 Years):
 
 Current Market Context: March 2026.
 Consider:
-1. The specific assets in the portfolio (e.g., Tech heavy, Value, Bonds, etc.)
+1. The specific assets in the portfolio (e.g., Tech heavy, Value, Bonds, etc.) and their long-term growth potential.
 2. Historical performance vs Benchmark. The historical CAGR is a strong indicator of the portfolio's quality; do not deviate significantly from it unless there are clear macroeconomic or sector-specific headwinds.
-3. Potential market trends for the next 10 years.
+3. Potential market trends for the next 10 years (AI revolution, energy transition, demographic shifts, etc.).
 
 Provide the following parameters for the simulation:
 - expectedReturn: The expected annual return (as a decimal, e.g., 0.12 for 12%).
@@ -213,12 +213,12 @@ Provide the following parameters for the simulation:
 - benchmarkExpectedReturn: Expected annual return for SPY (as a decimal).
 - benchmarkVolatility: Expected annual volatility for SPY (as a decimal).
 - marketSentiment: A short string describing the 10-year outlook (e.g., "Bullish", "Neutral", "Cautious").
-- reasoning: A brief explanation (in Traditional Chinese) of why these parameters were chosen based on the portfolio composition. IMPORTANT: Do not mention specific growth percentage numbers (e.g., "12%") in this text to avoid confusion with the simulation results. Focus on the logic and qualitative outlook.
+- reasoning: 以繁體中文提供簡潔、直白的分析。請具備「批評性思維」，從以下角度切入：科技趨勢、未來發展、國際局勢、及組合的「被顛覆性」。避免冗長贅述，重點在於對組合潛在風險與機會的犀利洞察。請勿在文字中提及具體的百分比數字。
 
 Return ONLY a JSON object.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3.1-flash-lite-preview",
+    model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
       responseMimeType: "application/json",

@@ -763,6 +763,9 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
     setAiReasoning(null);
     
     try {
+      // Add a small artificial delay to make the AI "thinking" feel more real
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       // Real AI Inference
       const aiParams = await getAIProjectionParams(currentProfile.allocations, stats);
       setAiReasoning(aiParams.reasoning);

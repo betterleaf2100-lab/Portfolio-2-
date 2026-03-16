@@ -45,7 +45,6 @@ import { extractPortfolioFromImage, fetchMarketData, PortfolioItem, Transaction 
 import { WealthProgressBar } from './components/WealthProgressBar';
 import { InvestmentPlanner } from './components/InvestmentPlanner';
 import { BetterleafPortfolio } from './components/BetterleafPortfolio';
-import { ApiTester } from './components/ApiTester';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useLanguage, Language } from './services/i18n';
@@ -2051,10 +2050,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* API Tester */}
-                <div className="pt-8 border-t border-[#141414]/5">
-                  <ApiTester />
-                </div>
               </div>
             </div>
           </motion.div>
