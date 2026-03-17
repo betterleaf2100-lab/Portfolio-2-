@@ -8,7 +8,7 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        (get(/databases/$(database)/documents/whitelisted_users/$(request.auth.token.email)).data.plan == 'admin' ||
          request.auth.uid == "zKV67M5hJRdh07GawmTZSJtxKA92" ||
          request.auth.token.email == "betterleaf2100@gmail.com");
     }

@@ -11,14 +11,16 @@ interface Translations {
 
 export const translations: Translations = {
   // Navigation & General
-  dashboard: { 'zh-TW': '儀表板', 'zh-CN': '仪表板', 'en': 'Dashboard' },
+  dashboard: { 'zh-TW': '資產總覽', 'zh-CN': '资产总览', 'en': 'Overview' },
   portfolio: { 'zh-TW': '財富自由', 'zh-CN': '财富自由', 'en': 'Wealth Freedom' },
   betterleaf: { 'zh-TW': '好葉持股', 'zh-CN': '好叶持股', 'en': 'Betterleaf Portfolio' },
   planner: { 'zh-TW': '投資規劃', 'zh-CN': '投资规划', 'en': 'Planner' },
+  history: { 'zh-TW': '歷史記錄', 'zh-CN': '历史记录', 'en': 'History' },
   settings: { 'zh-TW': '設定', 'zh-CN': '设定', 'en': 'Settings' },
   currency: { 'zh-TW': '貨幣', 'zh-CN': '货币', 'en': 'Currency' },
   language: { 'zh-TW': '語言', 'zh-CN': '语言', 'en': 'Language' },
   logout: { 'zh-TW': '登出', 'zh-CN': '登出', 'en': 'Logout' },
+  vipBadge: { 'zh-TW': 'VIP 每日更新', 'zh-CN': 'VIP 每日更新', 'en': 'VIP Daily' },
   portfolio_credits: { 'zh-TW': '額度', 'zh-CN': '额度', 'en': 'Credits' },
   publishGlobal: { 'zh-TW': '發佈到全局', 'zh-CN': '发布到全局', 'en': 'Publish to Global' },
   refreshData: { 'zh-TW': '刷新市場數據', 'zh-CN': '刷新市场数据', 'en': 'Refresh Market Data' },
@@ -132,7 +134,7 @@ export const translations: Translations = {
   publishGlobalTitle: { 'zh-TW': '發佈到全局持股', 'zh-CN': '发布到全局持股', 'en': 'Publish to Global Portfolio' },
   publishGlobalConfirm: { 'zh-TW': '您確定要將當前 Dashboard 的持倉數據發佈到「好葉持股」頁面嗎？這將覆蓋所有學生看到的示範數據。', 'zh-CN': '您确定要将当前 Dashboard 的持仓数据发布到「好叶持股」页面吗？这将覆盖所有学生看到的示范数据。', 'en': 'Are you sure you want to publish current dashboard data to "Betterleaf Portfolio"? This will overwrite the demo data seen by all students.' },
   publishSuccess: { 'zh-TW': '發佈成功！數據已同步至「好葉持股」頁面。', 'zh-CN': '发布成功！数据已同步至「好叶持股」页面。', 'en': 'Publish successful! Data synced to "Betterleaf Portfolio" page.' },
-  appManager: { 'zh-TW': '資產管理助手', 'zh-CN': '资产管理助手', 'en': 'Portfolio Manager' },
+  appManager: { 'zh-TW': 'Leafolio 定投管家', 'zh-CN': 'Leafolio 定投管家', 'en': 'Leafolio' },
   wealthGoal: { 'zh-TW': '財富自由數字', 'zh-CN': '财富自由数字', 'en': 'Wealth Freedom Number' },
   wealthGoalDesc: { 'zh-TW': '此模擬器計算您的投資回報何時將超過經通膨調整後的支出。當線條交叉時，您就達到了「財務獨立」——您的錢比您更努力工作。', 'zh-CN': '此模拟器计算您的投资回报何时将超过经通膨调整后的支出。当线条交叉时，您就达到了“财务独立”——您的钱比您更努力工作。', 'en': 'This simulator calculates when your investment returns will exceed your inflation-adjusted expenses. When the lines cross, you\'ve reached "Financial Independence" — your money works harder than you do.' },
   calculated: { 'zh-TW': '提早退休', 'zh-CN': '提早退休', 'en': 'Early Retirement' },
@@ -162,6 +164,7 @@ export const translations: Translations = {
   annualReturns: { 'zh-TW': '年度回報', 'zh-CN': '年度回报', 'en': 'Annual Returns' },
   status: { 'zh-TW': '狀態', 'zh-CN': '状态', 'en': 'Status' },
   financialFree: { 'zh-TW': '財務自由', 'zh-CN': '财务自由', 'en': 'Financial Free' },
+  returnsCoverExpenses: { 'zh-TW': '回報已過支出', 'zh-CN': '回报已过支出', 'en': 'Returns cover expenses' },
   building: { 'zh-TW': '累積中', 'zh-CN': '累積中', 'en': 'Building' },
   yearLabel: { 'zh-TW': '第 {n} 年', 'zh-CN': '第 {n} 年', 'en': 'Year {n}' },
   
@@ -264,7 +267,7 @@ export const translations: Translations = {
   feature2Desc: { 'zh-TW': '獲取好葉的實戰標的報告與深度解析。', 'zh-CN': '获取好叶的实战标的报告与深度解析。', 'en': 'Get Betterleaf\'s real-time reports and deep analysis.' },
   feature3Title: { 'zh-TW': '全球市場數據', 'zh-CN': '全球市场数据', 'en': 'Global Market Data' },
   feature3Desc: { 'zh-TW': '覆蓋全球主要交易所的即時行情。', 'zh-CN': '覆盖全球主要交易所的实时行情。', 'en': 'Real-time quotes covering major global exchanges.' },
-  appTitle: { 'zh-TW': '好葉投資 AI 助手', 'zh-CN': '好叶投资 AI 助手', 'en': 'Betterleaf Investment AI' },
+  appTitle: { 'zh-TW': 'Leafolio 定投管家', 'zh-CN': 'Leafolio 定投管家', 'en': 'Leafolio' },
   loginPrompt: { 'zh-TW': '請選擇登入方式', 'zh-CN': '请选择登录方式', 'en': 'Please choose a login method' },
   loginLinkSent: { 'zh-TW': '登入連結已發送', 'zh-CN': '登录链接已发送', 'en': 'Login link sent' },
   checkEmail: { 'zh-TW': '我們已向 {email} 發送了登入連結。', 'zh-CN': '我们已向 {email} 发送了登录链接。', 'en': 'We\'ve sent a login link to {email}.' },

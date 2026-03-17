@@ -87,7 +87,7 @@ export const ApiTester: React.FC = () => {
 
             <p className="text-xs text-[#141414]/50 leading-relaxed">
               {activeTab === 'batch' && "測試 yahooFinance.quote() 批量模式。"}
-              {activeTab === 'historical' && "測試 yahooFinance.historical() 歷史數據。"}
+              {activeTab === 'historical' && "測試 yahooFinance.chart() 歷史數據。"}
             </p>
             
             <div className="flex gap-2">

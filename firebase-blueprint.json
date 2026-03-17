@@ -131,6 +131,15 @@
     "/users/{userId}/settings/config": {
       "schema": "UserSettings",
       "description": "User-specific configuration and simulation parameters."
+    },
+    "/whitelisted_user/{email}": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "plan": { "type": "string", "enum": ["admin", "vip", "student", "trial"] }
+        }
+      },
+      "description": "Whitelist for user roles and plans."
     }
   }
 }

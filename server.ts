@@ -143,11 +143,21 @@ async function startServer() {
           else if (period === "ytd") start.setMonth(0, 1);
           else start.setFullYear(end.getFullYear() - 1);
 
-          const historical = await yahooFinance.historical(symbol, {
+          const chartResult = await yahooFinance.chart(symbol, {
             period1: start,
             period2: end,
             interval: "1d"
           });
+
+          const historical = chartResult.quotes.map(q => ({
+            date: q.date,
+            adjClose: q.adjclose,
+            close: q.close,
+            high: q.high,
+            low: q.low,
+            open: q.open,
+            volume: q.volume
+          }));
 
           // Update Cache
           historicalCache.set(cacheKey, { data: historical, timestamp: now });
@@ -203,11 +213,22 @@ async function startServer() {
       else if (period === "1y") start.setFullYear(end.getFullYear() - 1);
       else start.setMonth(end.getMonth() - 1);
 
-      const results = await yahooFinance.historical(symbol, {
+      const chartResult = await yahooFinance.chart(symbol, {
         period1: start,
         period2: end,
         interval: "1d"
       });
+      
+      const results = chartResult.quotes.map(q => ({
+        date: q.date,
+        adjClose: q.adjclose,
+        close: q.close,
+        high: q.high,
+        low: q.low,
+        open: q.open,
+        volume: q.volume
+      }));
+      
       res.json(results);
     } catch (error: any) {
       res.status(500).json({ error: error.message || String(error) });

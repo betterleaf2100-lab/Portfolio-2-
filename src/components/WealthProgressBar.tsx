@@ -74,7 +74,7 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
   role
 }) => {
   const { t } = useLanguage();
-  const { currency, formatCurrency, formatLocal, convert, rates } = useCurrency();
+  const { currency, formatCurrency, formatLocal, convert, fromLocal, rates } = useCurrency();
   const { settings, updateSettings } = useSettings();
   const currentCurrency = SUPPORTED_CURRENCIES.find(c => c.code === currency) || SUPPORTED_CURRENCIES[0];
   
@@ -85,7 +85,9 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
   const [monthlyExpenses, setMonthlyExpenses] = useState(800);
   const [inflationRate, setInflationRate] = useState(3);
   const [investmentReturn, setInvestmentReturn] = useState(10);
+  const bufferYears = 2; // Fixed to 2 years as requested
   const [manualGoal, setManualGoal] = useState<number | null>(null);
+  const [localManualGoal, setLocalManualGoal] = useState<string>("");
   const [useCalculatedGoal, setUseCalculatedGoal] = useState(true);
 
   // Use a ref to track if we are currently updating to avoid feedback loops
@@ -96,13 +98,28 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
   useEffect(() => {
     if (settings?.simulationParams && !isUpdatingRef.current) {
       const p = settings.simulationParams;
-      if (p.monthlyExpenses !== undefined && p.monthlyExpenses !== monthlyExpenses) setMonthlyExpenses(p.monthlyExpenses);
+      if (p.monthlyExpenses !== undefined && Math.abs(convert(p.monthlyExpenses) - monthlyExpenses) > 1) {
+        setMonthlyExpenses(convert(p.monthlyExpenses));
+      }
       if (p.inflationRate !== undefined && p.inflationRate !== inflationRate) setInflationRate(p.inflationRate);
       if (p.annualReturn !== undefined && p.annualReturn !== investmentReturn) setInvestmentReturn(p.annualReturn);
-      if (p.manualGoal !== undefined && p.manualGoal !== manualGoal) setManualGoal(p.manualGoal);
+      if (p.manualGoal !== undefined && p.manualGoal !== manualGoal) {
+        setManualGoal(p.manualGoal);
+        setLocalManualGoal(p.manualGoal ? p.manualGoal.toString() : "");
+      }
       if (p.useCalculatedGoal !== undefined && p.useCalculatedGoal !== useCalculatedGoal) setUseCalculatedGoal(p.useCalculatedGoal);
     }
-  }, [settings?.simulationParams]);
+  }, [settings?.simulationParams, convert]);
+
+  const handleManualGoalBlur = () => {
+    const val = Number(localManualGoal);
+    if (!isNaN(val) && val > 0) {
+      setManualGoal(val);
+      handleUpdateSimulation({ manualGoal: val });
+    } else {
+      setLocalManualGoal(manualGoal ? manualGoal.toString() : "");
+    }
+  };
 
   const handleUpdateSimulation = (updates: any) => {
     // Update local state immediately for responsiveness
@@ -117,6 +134,14 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
     
     isUpdatingRef.current = true;
     debounceTimerRef.current = setTimeout(async () => {
+      const convertedUpdates = { ...updates };
+      if (updates.monthlyExpenses !== undefined) {
+        convertedUpdates.monthlyExpenses = fromLocal(updates.monthlyExpenses);
+      }
+      if (updates.manualGoal !== undefined) {
+        convertedUpdates.manualGoal = fromLocal(updates.manualGoal);
+      }
+
       await updateSettings({
         simulationParams: {
           ...(settings?.simulationParams || {
@@ -128,11 +153,11 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
             manualGoal: null,
             useCalculatedGoal: true
           }),
-          ...updates
+          ...convertedUpdates
         }
       });
       isUpdatingRef.current = false;
-    }, 500);
+    }, 1000);
   };
 
   // Convert current portfolio value (USD) to local currency for simulation
@@ -161,29 +186,31 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
     for (let year = 0; year <= 30; year++) {
       const expenses = initialYearlyExpenses * Math.pow(1 + yearlyInflationRate, year);
       const returns = currentPortfolio * yearlyReturnRate;
+      const bufferAmount = expenses * bufferYears;
       
       data.push({
         year,
         expenses: Math.round(expenses),
         returns: Math.round(returns),
         portfolioValue: Math.round(currentPortfolio),
+        bufferAmount: Math.round(bufferAmount),
       });
 
       currentPortfolio = (currentPortfolio * (1 + yearlyReturnRate)) + yearlyContribution;
     }
     return data;
-  }, [localPortfolioValue, monthlyExpenses, inflationRate, monthlyContribution, investmentReturn]);
+  }, [localPortfolioValue, monthlyExpenses, inflationRate, monthlyContribution, investmentReturn, bufferYears]);
 
   const calculatedGoal = useMemo(() => {
     const intersection = simulationData.find(d => d.returns >= d.expenses);
     if (intersection) {
       // The goal is typically 25x annual expenses (4% rule) or where returns cover expenses
-      // User asked for the intersection point as the goal
-      return intersection.portfolioValue;
+      // Plus the requested buffer years
+      return intersection.portfolioValue + (intersection.expenses * bufferYears);
     }
     // Fallback if no intersection in 30 years
-    return (monthlyExpenses * 12) / (investmentReturn / 100);
-  }, [simulationData, monthlyExpenses, investmentReturn]);
+    return ((monthlyExpenses * 12) / (investmentReturn / 100)) + (monthlyExpenses * 12 * bufferYears);
+  }, [simulationData, monthlyExpenses, investmentReturn, bufferYears]);
 
   const targetGoal = useCalculatedGoal ? calculatedGoal : (manualGoal || calculatedGoal);
   const progress = Math.min(100, (localPortfolioValue / targetGoal) * 100);
@@ -238,11 +265,14 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
                   <label className="text-[10px] text-[#141414]/40 uppercase font-bold mb-1 block">{t('manualGoalAmount')}</label>
                   <input 
                     type="number"
-                    value={manualGoal || ''}
-                    onChange={(e) => {
-                      const val = Number(e.target.value);
-                      setManualGoal(val);
-                      handleUpdateSimulation({ manualGoal: val });
+                    value={localManualGoal}
+                    onChange={(e) => setLocalManualGoal(e.target.value)}
+                    onBlur={handleManualGoalBlur}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleManualGoalBlur();
+                        (e.target as HTMLInputElement).blur();
+                      }
                     }}
                     className="w-full text-2xl md:text-3xl font-bold bg-transparent border-b-2 border-[#141414]/10 focus:border-emerald-500 outline-none pb-2 transition-colors"
                     placeholder={t('enterGoal')}
@@ -250,11 +280,11 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
                 </div>
               ) : (
                 <div>
-                  <p className="text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('calculatedGoalAmount')}</p>
+                  <p className="hidden md:block text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('calculatedGoalAmount')}</p>
                   <p className="text-3xl md:text-4xl font-bold text-emerald-600">
                     {formatLocal(calculatedGoal, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
                   </p>
-                  <p className="text-xs text-[#141414]/40 mt-1 md:mt-2">
+                  <p className="hidden md:block text-xs text-[#141414]/40 mt-2">
                     {t('calculatedGoalDesc')}
                   </p>
                 </div>
@@ -266,7 +296,7 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
                 <div className="space-y-4 md:space-y-6">
                   <div className="flex items-center gap-3 md:gap-4">
                     {/* Current Achievement Badge (Start) */}
-                    <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-br ${MILESTONES[Math.min(currentMilestoneIndex, MILESTONES.length - 1)].color} flex items-center justify-center text-white shrink-0 shadow-lg relative group`}>
+                    <div className={`hidden md:flex w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-gradient-to-br ${MILESTONES[Math.min(currentMilestoneIndex, MILESTONES.length - 1)].color} items-center justify-center text-white shrink-0 shadow-lg relative group`}>
                       {React.createElement(MILESTONES[Math.min(currentMilestoneIndex, MILESTONES.length - 1)].icon, { size: 24 })}
                       <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
                         <CheckCircle2 size={8} className="text-white" />
@@ -315,15 +345,15 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
                       </div>
                       
                       <div className="flex justify-between items-center px-1">
-                        <p className="text-[9px] font-bold text-[#141414]/30 uppercase">{t('overallJourney')}: {progress.toFixed(1)}%</p>
+                        <p className="text-[9px] font-bold text-[#141414]/30 uppercase"><span className="hidden md:inline">{t('overallJourney')}: </span>{progress.toFixed(1)}%</p>
                         <p className="text-[9px] font-bold text-[#141414]/30 uppercase">
-                          {t('target')}: {formatLocal(((currentMilestoneIndex + 1) / MILESTONES.length * targetGoal), { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
+                          <span className="hidden md:inline">{t('target')}: </span>{formatLocal(((currentMilestoneIndex + 1) / MILESTONES.length * targetGoal), { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
                         </p>
                       </div>
                     </div>
 
                     {/* Next Target Badge (End) */}
-                    <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl ${currentMilestoneIndex < MILESTONES.length - 1 ? 'bg-[#141414]/5 text-[#141414]/10' : 'bg-gradient-to-br from-red-500 to-red-700 text-white'} flex items-center justify-center shrink-0 relative group`}>
+                    <div className={`hidden md:flex w-12 h-12 md:w-14 md:h-14 rounded-2xl ${currentMilestoneIndex < MILESTONES.length - 1 ? 'bg-[#141414]/5 text-[#141414]/10' : 'bg-gradient-to-br from-red-500 to-red-700 text-white'} items-center justify-center shrink-0 relative group`}>
                       {currentMilestoneIndex < MILESTONES.length - 1 ? (
                         <>
                           {React.createElement(MILESTONES[currentMilestoneIndex + 1].icon, { size: 24 })}
@@ -582,11 +612,12 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
               <tbody className="divide-y divide-[#141414]/5">
                 {simulationData.map((row) => {
                   const isFree = row.returns >= row.expenses;
+                  const isBufferedFree = isFree && row.portfolioValue >= (row.expenses / (investmentReturn / 100)) + row.bufferAmount;
                   return (
-                    <tr key={row.year} className={`hover:bg-[#141414]/2 transition-colors group ${isFree ? 'bg-emerald-50/30' : ''}`}>
+                    <tr key={row.year} className={`hover:bg-[#141414]/2 transition-colors group ${isBufferedFree ? 'bg-emerald-50/30' : isFree ? 'bg-yellow-50/30' : ''}`}>
                       <td className={cn(
                         "px-3 md:px-6 py-2 md:py-4 font-bold text-xs md:text-sm sticky left-0 z-20 transition-colors border-r border-[#141414]/5 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
-                        isFree ? "bg-emerald-50 group-hover:bg-emerald-100" : "bg-white group-hover:bg-[#F5F5F0]"
+                        isBufferedFree ? "bg-emerald-50 group-hover:bg-emerald-100" : isFree ? "bg-yellow-50 group-hover:bg-yellow-100" : "bg-white group-hover:bg-[#F5F5F0]"
                       )}>
                         {t('yearLabel', { n: row.year.toString() })}
                       </td>
@@ -594,9 +625,13 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
                       <td className="px-3 md:px-6 py-2 md:py-4 font-mono text-xs md:text-sm text-emerald-600 font-bold">{formatLocal(row.returns, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</td>
                       <td className="px-3 md:px-6 py-2 md:py-4 font-mono text-xs md:text-sm text-red-500">{formatLocal(row.expenses, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</td>
                       <td className="px-3 md:px-6 py-2 md:py-4">
-                        {isFree ? (
+                        {isBufferedFree ? (
                           <span className="px-1.5 py-0.5 md:px-2 md:py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[8px] md:text-[10px] font-bold uppercase tracking-wider">
                             {t('financialFree')}
+                          </span>
+                        ) : isFree ? (
+                          <span className="px-1.5 py-0.5 md:px-2 md:py-1 bg-yellow-100 text-yellow-700 rounded-lg text-[8px] md:text-[10px] font-bold uppercase tracking-wider">
+                            {t('returnsCoverExpenses')}
                           </span>
                         ) : (
                           <span className="px-1.5 py-0.5 md:px-2 md:py-1 bg-[#141414]/5 text-[#141414]/40 rounded-lg text-[8px] md:text-[10px] font-bold uppercase tracking-wider">

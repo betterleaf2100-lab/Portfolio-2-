@@ -148,8 +148,59 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
   const [isEditingProfiles, setIsEditingProfiles] = useState(false);
   const [editingProfiles, setEditingProfiles] = useState<RiskProfile[]>([]);
 
-  const [lumpSum, setLumpSum] = useState(0);
-  const [riskId, setRiskId] = useState<'conservative' | 'moderate' | 'aggressive' | 'custom'>('moderate');
+  const {
+    lumpSum,
+    riskId,
+    isProjected,
+    projectionData,
+    projectedAnnualReturns,
+    aiReasoning,
+    marketSentiment,
+    isBacktested,
+    timeRange
+  } = plannerState;
+
+  const setLumpSum = (val: number) => setPlannerState({ ...plannerState, lumpSum: val });
+  const setRiskId = (val: any) => setPlannerState({ ...plannerState, riskId: val });
+  const setIsProjected = (val: boolean) => setPlannerState({ ...plannerState, isProjected: val });
+  const setProjectionData = (val: any[]) => setPlannerState({ ...plannerState, projectionData: val });
+  const setProjectedAnnualReturns = (val: any[]) => setPlannerState({ ...plannerState, projectedAnnualReturns: val });
+  const setAiReasoning = (val: string | null) => setPlannerState({ ...plannerState, aiReasoning: val });
+  const setMarketSentiment = (val: string | null) => setPlannerState({ ...plannerState, marketSentiment: val });
+  const setIsBacktested = (val: boolean) => setPlannerState({ ...plannerState, isBacktested: val });
+  const setTimeRange = (val: any) => setPlannerState({ ...plannerState, timeRange: val });
+
+  const [localMonthlyContribution, setLocalMonthlyContribution] = useState(Math.round(monthlyContribution).toString());
+  const [localLumpSum, setLocalLumpSum] = useState(Math.round(lumpSum).toString());
+
+  // Sync local states when props/state change from outside
+  useEffect(() => {
+    setLocalMonthlyContribution(Math.round(monthlyContribution).toString());
+  }, [monthlyContribution]);
+
+  useEffect(() => {
+    setLocalLumpSum(Math.round(lumpSum).toString());
+  }, [lumpSum]);
+
+  const handleMonthlyContributionBlur = () => {
+    const val = Math.round(Number(localMonthlyContribution));
+    if (!isNaN(val)) {
+      onMonthlyContributionChange(val);
+    } else {
+      setLocalMonthlyContribution(Math.round(monthlyContribution).toString());
+    }
+  };
+
+  const handleLumpSumBlur = () => {
+    const val = Math.round(Number(localLumpSum));
+    if (!isNaN(val)) {
+      setLumpSum(val);
+    } else {
+      setLocalLumpSum(Math.round(lumpSum).toString());
+    }
+  };
+
+  const [investmentType, setInvestmentType] = useState<'monthly' | 'lumpSum'>('monthly');
   const [customAllocations, setCustomAllocations] = useState<Allocation[]>([
     { symbol: 'VOO', weight: 0.50 },
     { symbol: 'QQQ', weight: 0.50 }
@@ -158,16 +209,9 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
   const [marketData, setMarketData] = useState<any[]>([]);
   const [allData, setAllData] = useState<{dateMap: Record<string, any>, sortedDates: string[]} | null>(null);
   const [historicalData, setHistoricalData] = useState<any[]>([]);
-  const [timeRange, setTimeRange] = useState<'1Y' | '5Y' | '10Y' | 'YTD' | 'MAX'>('10Y');
   const [isLoading, setIsLoading] = useState(false);
   const [annualReturns, setAnnualReturns] = useState<any[]>([]);
-  const [isProjected, setIsProjected] = useState(false);
-  const [projectionData, setProjectionData] = useState<any[]>([]);
-  const [projectedAnnualReturns, setProjectedAnnualReturns] = useState<any[]>([]);
   const [isProjecting, setIsProjecting] = useState(false);
-  const [aiReasoning, setAiReasoning] = useState<string | null>(null);
-  const [marketSentiment, setMarketSentiment] = useState<string | null>(null);
-  const [isBacktested, setIsBacktested] = useState(false);
   const stateParamsKey = useRef<string | null>(null);
 
   const currentProfile = useMemo(() => {
@@ -182,12 +226,13 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
     return riskId === 'custom' ? appliedCustomAllocations : currentProfile.allocations;
   }, [riskId, appliedCustomAllocations, currentProfile.allocations]);
 
-  const totalInvestment = monthlyContribution + lumpSum;
+  const totalInvestment = investmentType === 'monthly' ? monthlyContribution : lumpSum;
 
   const currentParamsKey = useMemo(() => JSON.stringify({
     allocations: currentProfile.allocations,
-    totalInvestment
-  }), [currentProfile.allocations, totalInvestment]);
+    totalInvestment,
+    investmentType
+  }), [currentProfile.allocations, totalInvestment, investmentType]);
 
   // Load projection from localStorage
   useEffect(() => {
@@ -857,45 +902,72 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
       {/* Header & Inputs */}
       <div className="space-y-4 md:space-y-8">
         <div className="bg-white p-4 md:p-8 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-4 md:mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-8">
             <h2 className="text-lg md:text-2xl font-bold flex items-center gap-3">
               <Calculator className="text-emerald-600" size={24} />
               {t('investmentPlannerTitle')}
             </h2>
-            <div className="bg-[#141414] text-white px-4 md:px-6 py-2 md:py-3 rounded-xl md:rounded-2xl flex items-center justify-between md:justify-start gap-4">
-              <span className="text-xs md:text-[10px] font-bold uppercase tracking-widest opacity-40">{t('totalInvestmentEstimated')}</span>
-              <span className="text-lg md:text-2xl font-bold">{formatLocal(totalInvestment, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</span>
-            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
-            <div className="space-y-2 md:space-y-4">
-              <label className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1 block">{t('monthlyContributionLabel')}</label>
-              <div className="relative">
-                <span className="absolute left-0 bottom-2 text-lg md:text-2xl font-bold text-[#141414]/20">{currencySymbol}</span>
-                <input 
-                  type="number"
-                  value={monthlyContribution}
-                  onChange={(e) => onMonthlyContributionChange(Number(e.target.value))}
-                  className="w-full text-2xl md:text-4xl font-bold bg-transparent border-b-2 border-[#141414]/10 focus:border-emerald-500 outline-none pb-2 pl-16 md:pl-20 transition-colors"
-                />
-              </div>
-              <p className="text-xs md:text-xs text-[#141414]/40">{t('monthlyContributionSyncDesc')}</p>
+          <div className="max-w-2xl">
+            <div className="flex p-1 bg-[#141414]/5 rounded-xl md:rounded-2xl mb-6 md:mb-8">
+              <button
+                onClick={() => setInvestmentType('monthly')}
+                className={`flex-1 py-2 md:py-3 rounded-lg md:rounded-xl text-xs md:text-sm font-bold transition-all ${
+                  investmentType === 'monthly' ? 'bg-white shadow-sm text-[#141414]' : 'text-[#141414]/40 hover:text-[#141414]/60'
+                }`}
+              >
+                {t('monthlyContributionLabel')}
+              </button>
+              <button
+                onClick={() => setInvestmentType('lumpSum')}
+                className={`flex-1 py-2 md:py-3 rounded-lg md:rounded-xl text-xs md:text-sm font-bold transition-all ${
+                  investmentType === 'lumpSum' ? 'bg-white shadow-sm text-[#141414]' : 'text-[#141414]/40 hover:text-[#141414]/60'
+                }`}
+              >
+                {t('lumpSumLabel')}
+              </button>
             </div>
 
             <div className="space-y-2 md:space-y-4">
-              <label className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1 block">{t('lumpSumLabel')}</label>
               <div className="relative">
                 <span className="absolute left-0 bottom-2 text-lg md:text-2xl font-bold text-[#141414]/20">{currencySymbol}</span>
-                <input 
-                  type="number"
-                  value={lumpSum}
-                  onChange={(e) => setLumpSum(Number(e.target.value))}
-                  className="w-full text-2xl md:text-4xl font-bold bg-transparent border-b-2 border-[#141414]/10 focus:border-emerald-500 outline-none pb-2 pl-16 md:pl-20 transition-colors"
-                  placeholder="0"
-                />
+                {investmentType === 'monthly' ? (
+                  <input 
+                    type="number"
+                    step="1"
+                    value={localMonthlyContribution}
+                    onChange={(e) => setLocalMonthlyContribution(e.target.value)}
+                    onBlur={handleMonthlyContributionBlur}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleMonthlyContributionBlur();
+                        (e.target as HTMLInputElement).blur();
+                      }
+                    }}
+                    className="w-full text-2xl md:text-4xl font-bold bg-transparent border-b-2 border-[#141414]/10 focus:border-emerald-500 outline-none pb-2 pl-16 md:pl-20 transition-colors"
+                  />
+                ) : (
+                  <input 
+                    type="number"
+                    step="1"
+                    value={localLumpSum}
+                    onChange={(e) => setLocalLumpSum(e.target.value)}
+                    onBlur={handleLumpSumBlur}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleLumpSumBlur();
+                        (e.target as HTMLInputElement).blur();
+                      }
+                    }}
+                    className="w-full text-2xl md:text-4xl font-bold bg-transparent border-b-2 border-[#141414]/10 focus:border-emerald-500 outline-none pb-2 pl-16 md:pl-20 transition-colors"
+                    placeholder="0"
+                  />
+                )}
               </div>
-              <p className="text-xs md:text-xs text-[#141414]/40">{t('lumpSumDesc')}</p>
+              <p className="text-[10px] md:text-xs text-[#141414]/40">
+                {investmentType === 'monthly' ? t('monthlyContributionSyncDesc') : t('lumpSumDesc')}
+              </p>
             </div>
           </div>
 
@@ -1034,7 +1106,7 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
                       <profile.icon size={18} />
                     </div>
                     <h4 className="font-bold text-xs md:text-sm mb-1">{t(profile.name)}</h4>
-                    <p className="text-xs md:text-[10px] text-[#141414]/40 leading-tight md:leading-relaxed">{t(profile.description)}</p>
+                    <p className="text-[10px] md:text-[10px] text-[#141414]/40 leading-tight md:leading-relaxed">{t(profile.description)}</p>
                   </button>
                 ))}
               </div>
@@ -1071,11 +1143,16 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
                         <div className="relative">
                           <input 
                             type="text"
-                            value={alloc.symbol}
-                            onChange={(e) => {
+                            defaultValue={alloc.symbol}
+                            onBlur={(e) => {
                               const newAllocations = [...customAllocations];
                               newAllocations[index].symbol = e.target.value.toUpperCase();
                               setCustomAllocations(newAllocations);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                (e.target as HTMLInputElement).blur();
+                              }
                             }}
                             placeholder={t('tickerPlaceholder')}
                             className="w-full bg-[#141414]/5 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -1084,12 +1161,17 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
                         <div className="relative">
                           <input 
                             type="number"
-                            value={alloc.weight === 0 ? "" : Number((alloc.weight * 100).toFixed(2))}
-                            onChange={(e) => {
+                            defaultValue={alloc.weight === 0 ? "" : Number((alloc.weight * 100).toFixed(2))}
+                            onBlur={(e) => {
                               const val = e.target.value;
                               const newAllocations = [...customAllocations];
                               newAllocations[index].weight = val === "" ? 0 : parseFloat(val) / 100;
                               setCustomAllocations(newAllocations);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                (e.target as HTMLInputElement).blur();
+                              }
                             }}
                             placeholder={t('weight')}
                             className={`w-full bg-[#141414]/5 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none pr-8 transition-colors ${
@@ -1161,7 +1243,7 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
         <div className="p-4 md:p-8 border-b border-[#141414]/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h3 className="text-base md:text-lg font-bold">{t('copyPortfolioAllocation')}</h3>
-            <p className="text-xs text-[#141414]/40 mt-1">{t('basedOnRiskDesc')}</p>
+            <p className="text-[10px] text-[#141414]/40 mt-1">{t('basedOnRiskDesc')}</p>
           </div>
           <div className="flex items-center gap-4 md:gap-6">
             <div className="text-right">
@@ -1477,7 +1559,7 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
                 <Zap size={20} className="text-amber-500" />
                 {t('aiGrowthProjection')}
               </h3>
-              <p className="text-xs text-[#141414]/40 mt-1">{t('aiGrowthProjectionDesc')}</p>
+              <p className="text-[10px] text-[#141414]/40 mt-1">{t('aiGrowthProjectionDesc')}</p>
             </div>
             <div className="flex items-center gap-4">
               <button

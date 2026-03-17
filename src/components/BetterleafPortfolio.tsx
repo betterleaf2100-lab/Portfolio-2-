@@ -255,7 +255,7 @@ const StockTable = ({
                         ) : (
                           <span className="text-xs md:text-sm font-bold text-[#141414] group-hover:text-emerald-600 transition-colors">{stock.symbol}</span>
                         )}
-                        <span className={`text-xs md:text-[11px] text-[#141414]/40 font-medium ${isLocked ? 'blur-[4px] select-none opacity-30' : ''}`}>
+                        <span className={`text-[10px] md:text-[11px] text-[#141414]/40 font-medium ${isLocked ? 'blur-[4px] select-none opacity-30' : ''}`}>
                           {isLocked ? t('hiddenCompany') : displayName}
                         </span>
                       </div>
@@ -836,7 +836,7 @@ export const BetterleafPortfolio: React.FC<{ role?: string }> = ({ role }) => {
           </div>
           <div>
             <p className="text-sm font-bold">{t('unlockStrategy')}</p>
-            <p className="text-xs text-[#141414]/60">{t('joinCommunity')}</p>
+            <p className="text-[10px] text-[#141414]/60">{t('joinCommunity')}</p>
           </div>
         </div>
         <a 

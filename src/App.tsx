@@ -8,6 +8,7 @@ import {
   Plus, 
   Upload, 
   TrendingUp, 
+  Leaf,
   History, 
   PieChart as PieChartIcon, 
   ArrowUpRight, 
@@ -21,6 +22,7 @@ import {
   RefreshCw,
   LogOut,
   Menu,
+  Settings,
   ChevronRight
 } from 'lucide-react';
 import { 
@@ -61,16 +63,17 @@ import { useSettings } from './services/settingsService';
 
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
-  const { currency, setCurrency, formatCurrency, convert, rates } = useCurrency();
+  const { currency, setCurrency, formatCurrency, convert, fromLocal, rates } = useCurrency();
   const { settings, updateSettings } = useSettings();
 
-  const [monthlyContribution, setMonthlyContributionState] = useState(800);
+  const [monthlyContribution, setMonthlyContributionState] = useState(800); // Stored in USD
   const isUpdatingContributionRef = useRef(false);
   const contributionDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const setMonthlyContribution = (val: number) => {
-    if (val === monthlyContribution) return;
-    setMonthlyContributionState(val);
+  const setMonthlyContribution = (valLocal: number) => {
+    const valUsd = fromLocal(valLocal);
+    if (Math.abs(valUsd - monthlyContribution) < 0.01) return;
+    setMonthlyContributionState(valUsd);
     
     if (contributionDebounceRef.current) clearTimeout(contributionDebounceRef.current);
     
@@ -87,11 +90,11 @@ export default function App() {
             manualGoal: null,
             useCalculatedGoal: true
           }),
-          monthlyInvestment: val 
+          monthlyInvestment: valUsd 
         }
       });
       isUpdatingContributionRef.current = false;
-    }, 500);
+    }, 1000);
   };
 
   const [user, setUser] = useState<User | null>(null);
@@ -114,6 +117,7 @@ export default function App() {
   const [isTesting, setIsTesting] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Investment Planner Persisted State
   const [plannerState, setPlannerState] = useState<{
@@ -126,6 +130,7 @@ export default function App() {
     marketSentiment: string | null;
     isBacktested: boolean;
     timeRange: '1Y' | '5Y' | '10Y' | 'YTD' | 'MAX';
+    customAllocations: { symbol: string; weight: number }[];
   }>({
     lumpSum: 0,
     riskId: 'moderate',
@@ -135,17 +140,75 @@ export default function App() {
     aiReasoning: null,
     marketSentiment: null,
     isBacktested: false,
-    timeRange: '10Y'
+    timeRange: '10Y',
+    customAllocations: [
+      { symbol: 'VOO', weight: 0.50 },
+      { symbol: 'QQQ', weight: 0.50 }
+    ]
   });
 
-  // Sync monthlyContribution from settings
+  const plannerDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const isUpdatingPlannerRef = useRef(false);
+
+  // Sync monthlyContribution, lumpSum, and customAllocations from settings
   useEffect(() => {
-    if (settings?.simulationParams?.monthlyInvestment !== undefined && 
-        settings.simulationParams.monthlyInvestment !== monthlyContribution &&
-        !isUpdatingContributionRef.current) {
-      setMonthlyContributionState(settings.simulationParams.monthlyInvestment);
+    if (settings?.simulationParams && !isUpdatingContributionRef.current && !isUpdatingPlannerRef.current) {
+      const p = settings.simulationParams;
+      if (p.monthlyInvestment !== undefined && p.monthlyInvestment !== monthlyContribution) {
+        setMonthlyContributionState(p.monthlyInvestment);
+      }
+      
+      setPlannerState(prev => {
+        let changed = false;
+        const next = { ...prev };
+        
+        if (p.lumpSum !== undefined && p.lumpSum !== fromLocal(prev.lumpSum)) {
+          next.lumpSum = convert(p.lumpSum!);
+          changed = true;
+        }
+        
+        if (p.customAllocations && JSON.stringify(p.customAllocations) !== JSON.stringify(prev.customAllocations)) {
+          next.customAllocations = p.customAllocations;
+          changed = true;
+        }
+        
+        return changed ? next : prev;
+      });
     }
-  }, [settings?.simulationParams?.monthlyInvestment]);
+  }, [settings?.simulationParams, convert, fromLocal, monthlyContribution]);
+
+  const handlePlannerStateChange = (newState: any) => {
+    const oldState = plannerState;
+    setPlannerState(newState);
+    
+    // If lumpSum or customAllocations changed, sync to settings with debounce
+    const lumpSumChanged = newState.lumpSum !== oldState.lumpSum;
+    const allocationsChanged = JSON.stringify(newState.customAllocations) !== JSON.stringify(oldState.customAllocations);
+    
+    if (lumpSumChanged || allocationsChanged) {
+      if (plannerDebounceRef.current) clearTimeout(plannerDebounceRef.current);
+      
+      isUpdatingPlannerRef.current = true;
+      plannerDebounceRef.current = setTimeout(async () => {
+        const valUsd = fromLocal(newState.lumpSum);
+        await updateSettings({
+          simulationParams: {
+            annualReturn: 10,
+            years: 30,
+            monthlyExpenses: 800,
+            monthlyInvestment: 800,
+            inflationRate: 3,
+            manualGoal: null,
+            useCalculatedGoal: true,
+            ...(settings?.simulationParams || {}),
+            lumpSum: valUsd,
+            customAllocations: newState.customAllocations
+          }
+        });
+        isUpdatingPlannerRef.current = false;
+      }, 1000);
+    }
+  };
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean;
     title: string;
@@ -208,37 +271,44 @@ export default function App() {
   const freedomProgress = useMemo(() => {
     if (!settings?.simulationParams) return 0;
     const p = settings.simulationParams;
-    const monthlyExpenses = p.monthlyExpenses || 800;
+    const monthlyExpenses = p.monthlyExpenses || 800; // USD
     const inflationRate = p.inflationRate || 3;
     const investmentReturn = p.annualReturn || 10;
-    const monthlyInvestment = p.monthlyInvestment || 800;
-    const useCalculatedGoal = p.useCalculatedGoal !== false;
-    const manualGoal = p.manualGoal;
-
-    const localPortfolioValue = convert(totalValue);
+    const monthlyInvestment = p.monthlyInvestment || 800; // USD
+    const bufferYears = 2;
+    
+    // Use USD for everything
+    const currentPortfolioValue = totalValue; // USD
     
     // Simple simulation for goal calculation
     const yearlyReturnRate = investmentReturn / 100;
     const yearlyInflationRate = inflationRate / 100;
-    const yearlyContribution = monthlyInvestment * 12;
-    const initialYearlyExpenses = monthlyExpenses * 12;
+    const yearlyContribution = monthlyInvestment * 12; // USD
+    const initialYearlyExpenses = monthlyExpenses * 12; // USD
 
-    let currentPortfolio = localPortfolioValue;
-    let calculatedGoal = (monthlyExpenses * 12) / (investmentReturn / 100); // Fallback
+    let currentPortfolio = currentPortfolioValue;
+    let targetGoal = 0;
 
     for (let year = 0; year <= 30; year++) {
       const expenses = initialYearlyExpenses * Math.pow(1 + yearlyInflationRate, year);
       const returns = currentPortfolio * yearlyReturnRate;
-      if (returns >= expenses) {
-        calculatedGoal = currentPortfolio;
-        break;
+      
+      if (returns >= expenses && targetGoal === 0) {
+        targetGoal = currentPortfolio + (expenses * bufferYears);
       }
       currentPortfolio = (currentPortfolio * (1 + yearlyReturnRate)) + yearlyContribution;
     }
 
-    const targetGoal = useCalculatedGoal ? calculatedGoal : (manualGoal || calculatedGoal);
-    return Math.min(100, (localPortfolioValue / targetGoal) * 100);
-  }, [totalValue, settings?.simulationParams, convert]);
+    if (targetGoal === 0) {
+      targetGoal = (initialYearlyExpenses / yearlyReturnRate) + (initialYearlyExpenses * bufferYears);
+    }
+
+    const manualGoal = p.manualGoal; // USD
+    const useCalculatedGoal = p.useCalculatedGoal;
+
+    const finalGoal = useCalculatedGoal ? targetGoal : (manualGoal || targetGoal);
+    return Math.min(100, (currentPortfolioValue / finalGoal) * 100);
+  }, [totalValue, settings?.simulationParams]);
 
   const monthlyInvestmentTotal = useMemo(() => {
     const now = new Date();
@@ -251,8 +321,8 @@ export default function App() {
 
   const monthlyInvestmentProgress = useMemo(() => {
     if (monthlyContribution <= 0) return 0;
-    return Math.min(100, (convert(monthlyInvestmentTotal) / monthlyContribution) * 100);
-  }, [monthlyInvestmentTotal, monthlyContribution, convert]);
+    return Math.min(100, (monthlyInvestmentTotal / monthlyContribution) * 100);
+  }, [monthlyInvestmentTotal, monthlyContribution]);
 
   const currentMilestone = useMemo(() => {
     const index = Math.floor((freedomProgress / 100) * MILESTONES_CONFIG.length);
@@ -821,7 +891,7 @@ export default function App() {
               className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity"
             >
               <div className="w-8 h-8 bg-[#141414] rounded-lg flex items-center justify-center text-white shrink-0">
-                <TrendingUp size={20} />
+                <Leaf size={20} />
               </div>
               <h1 className="text-base md:text-xl font-semibold tracking-tight truncate">{t('appManager')}</h1>
             </button>
@@ -829,20 +899,19 @@ export default function App() {
           
           <div className="flex items-center gap-2 md:gap-4">
             {/* Desktop Navigation */}
-            <nav className="hidden xl:flex items-center gap-1 bg-[#141414]/5 p-1 rounded-full">
+            <nav className="hidden xl:flex items-center gap-0.5 bg-[#141414]/5 p-1 rounded-full">
               {[
                 { id: 'dashboard', label: t('dashboard') },
                 { id: 'wealth', label: t('portfolio') },
                 { id: 'invest', label: t('planner') },
                 { id: 'betterleaf', label: t('betterleaf') },
-                { id: 'history', label: t('history') },
-                { id: 'settings', label: t('settings') }
+                { id: 'history', label: t('history') }
               ].map((item) => (
                 <button 
                   key={item.id}
                   onClick={() => setView(item.id as any)}
                   className={cn(
-                    "px-4 py-1.5 rounded-full text-sm font-medium transition-all",
+                    "px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all",
                     view === item.id ? "bg-white shadow-sm text-[#141414]" : "text-[#141414]/60 hover:text-[#141414]"
                   )}
                 >
@@ -872,14 +941,26 @@ export default function App() {
                     <span className="hidden lg:inline">{t('publishGlobal')}</span>
                   </button>
                 )}
+                <button 
+                  onClick={() => setView('settings')}
+                  className={cn(
+                    "p-2 rounded-xl transition-all flex items-center gap-2 text-xs font-bold",
+                    view === 'settings' ? "bg-[#141414] text-white" : "hover:bg-[#141414]/5 text-[#141414]/60 hover:text-[#141414]"
+                  )}
+                  title={t('settings')}
+                >
+                  <Settings size={16} />
+                  <span className="hidden lg:inline">{t('settings')}</span>
+                </button>
               </div>
-              <div className="flex flex-col items-end">
-                <div className="flex items-center gap-2">
-                  {userData?.role === 'vip' && <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-bold rounded uppercase">VIP</span>}
-                  {userData?.role === 'admin' && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-bold rounded uppercase">Admin</span>}
-                  <span className="text-[10px] font-bold text-[#141414]/40 uppercase tracking-widest">{t('portfolio_credits')}: {userData?.portfolio_credits}</span>
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-1">
+                  {userData?.role === 'vip' && <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-bold rounded uppercase border border-amber-200">{t('vipBadge')}</span>}
+                  {userData?.role === 'student' && <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-bold rounded uppercase border border-emerald-200">Student</span>}
+                  {userData?.role === 'trial' && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold rounded uppercase border border-slate-200">Trial</span>}
+                  {userData?.role === 'admin' && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-bold rounded uppercase border border-indigo-200">Admin</span>}
                 </div>
-                <span className="text-xs font-medium text-[#141414]">{user?.email}</span>
+                <span className="text-[10px] font-bold text-[#141414]/40 uppercase tracking-widest leading-none">{t('portfolio_credits')}: {userData?.portfolio_credits}</span>
               </div>
               <button 
                 onClick={handleLogout}
@@ -919,19 +1000,18 @@ export default function App() {
                   className="flex items-center gap-3 px-4 py-2 hover:bg-[#141414]/5 rounded-xl transition-all w-full text-left"
                 >
                   <div className="w-8 h-8 bg-[#141414] rounded-lg flex items-center justify-center text-white shrink-0">
-                    <TrendingUp size={20} />
+                    <Leaf size={20} />
                   </div>
                   <span className="font-bold text-lg">{t('appManager')}</span>
                 </button>
 
                 <nav className="grid grid-cols-1 gap-2">
                   {[
-                    { id: 'dashboard', label: t('dashboard'), icon: TrendingUp },
+                    { id: 'dashboard', label: t('dashboard'), icon: Leaf },
                     { id: 'wealth', label: t('portfolio'), icon: PieChartIcon },
                     { id: 'invest', label: t('planner'), icon: Target },
                     { id: 'betterleaf', label: t('betterleaf'), icon: Check },
-                    { id: 'history', label: t('history'), icon: History },
-                    { id: 'settings', label: t('settings'), icon: RefreshCw }
+                    { id: 'history', label: t('history'), icon: History }
                   ].map((item) => (
                     <button 
                       key={item.id}
@@ -957,14 +1037,31 @@ export default function App() {
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col">
                       <span className="text-[10px] font-bold text-[#141414]/40 uppercase tracking-widest">{t('account')}</span>
-                      <span className="text-sm font-bold truncate max-w-[200px]">{user?.email}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold truncate max-w-[150px]">{user?.email}</span>
+                        {userData?.role === 'vip' && <span className="px-1 py-0.5 bg-amber-100 text-amber-700 text-[8px] font-bold rounded uppercase border border-amber-200">VIP</span>}
+                      </div>
                     </div>
-                    <button 
-                      onClick={handleLogout}
-                      className="p-2 bg-red-50 text-red-600 rounded-xl"
-                    >
-                      <LogOut size={18} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          setView('settings');
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className={cn(
+                          "p-2 rounded-xl transition-all",
+                          view === 'settings' ? "bg-[#141414] text-white" : "bg-white text-[#141414]/60"
+                        )}
+                      >
+                        <Settings size={18} />
+                      </button>
+                      <button 
+                        onClick={handleLogout}
+                        className="p-2 bg-red-50 text-red-600 rounded-xl"
+                      >
+                        <LogOut size={18} />
+                      </button>
+                    </div>
                   </div>
                   
                   <div className="flex items-center justify-between pt-4 border-t border-[#141414]/10">
@@ -1019,7 +1116,7 @@ export default function App() {
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm"
                 >
-                  <p className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('totalWealth')}</p>
+                  <p className="text-[10px] md:text-xs text-[#141414]/40 uppercase font-bold mb-1">{t('totalWealth')}</p>
                   <p className="text-lg md:text-xl font-bold">{formatCurrency(totalValue, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</p>
                 </motion.div>
 
@@ -1029,7 +1126,7 @@ export default function App() {
                   transition={{ delay: 0.1 }}
                   className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm"
                 >
-                  <p className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('totalProfitLoss')}</p>
+                  <p className="text-[10px] md:text-xs text-[#141414]/40 uppercase font-bold mb-1">{t('totalProfitLoss')}</p>
                   <div className="flex flex-col">
                     <p className={cn(
                       "text-lg md:text-xl font-bold",
@@ -1050,9 +1147,10 @@ export default function App() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm"
+                  onClick={() => setView('wealth')}
+                  className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
                 >
-                  <p className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('wealthFreedomProgress')}</p>
+                  <p className="text-[10px] md:text-xs text-[#141414]/40 uppercase font-bold mb-1">{t('wealthFreedomProgress')}</p>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <p className="text-lg md:text-xl font-bold">{freedomProgress.toFixed(1)}%</p>
@@ -1078,14 +1176,17 @@ export default function App() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm"
+                  onClick={() => setView('invest')}
+                  className="bg-white p-3 md:p-5 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm cursor-pointer hover:shadow-md transition-all active:scale-[0.98] overflow-hidden"
                 >
-                  <p className="text-xs md:text-[10px] text-[#141414]/40 uppercase font-bold mb-1">{t('monthlyInvestmentProgress')}</p>
+                  <p className="text-[10px] md:text-xs text-[#141414]/40 uppercase font-bold mb-1">{t('monthlyInvestmentProgress')}</p>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-lg md:text-xl font-bold">{monthlyInvestmentProgress.toFixed(1)}%</p>
-                      <p className="text-xs md:text-[10px] text-[#141414]/40 font-bold">
-                        {formatCurrency(convert(monthlyInvestmentTotal), { maximumFractionDigits: 0 })} / {formatCurrency(monthlyContribution, { maximumFractionDigits: 0 })}
+                    <div className="flex flex-wrap items-baseline gap-x-1">
+                      <p className="text-base md:text-xl font-bold truncate">
+                        {formatCurrency(monthlyInvestmentTotal, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
+                      </p>
+                      <p className="text-[10px] md:text-sm text-[#141414]/40 font-bold whitespace-nowrap">
+                        / {formatCurrency(monthlyContribution, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}
                       </p>
                     </div>
                     <div className="h-1.5 bg-[#141414]/5 rounded-full overflow-hidden">
@@ -1169,6 +1270,7 @@ export default function App() {
                             paddingAngle={5}
                             dataKey="value"
                             onClick={(data: any) => {
+                              if (window.innerWidth < 768) return;
                               if (data.isAsset) {
                                 setSelectedAsset(data.symbol);
                               } else if (!selectedCategory) {
@@ -1321,10 +1423,32 @@ export default function App() {
                   <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2">{t('updatePortfolio')}</h3>
                   <p className="text-white/60 text-xs md:text-sm mb-4 md:mb-6">{t('updatePortfolioDesc')}</p>
                   
-                  <label className={cn(
-                    "flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-2xl p-5 md:p-8 cursor-pointer transition-all hover:border-white/40 hover:bg-white/5",
-                    isUploading && "opacity-50 cursor-not-allowed"
-                  )}>
+                  <label 
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragging(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragging(false);
+                      const file = e.dataTransfer.files?.[0];
+                      if (file && file.type.startsWith('image/')) {
+                        processImage(file);
+                      }
+                    }}
+                    className={cn(
+                      "flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-2xl p-5 md:p-8 cursor-pointer transition-all hover:border-white/40 hover:bg-white/5",
+                      isUploading && "opacity-50 cursor-not-allowed",
+                      isDragging && "border-white/60 bg-white/10"
+                    )}
+                  >
                     {isUploading ? (
                       <div className="flex flex-col items-center">
                         <Loader2 className="animate-spin mb-3 md:mb-4" size={24} />
@@ -1798,7 +1922,7 @@ export default function App() {
           >
             <WealthProgressBar 
               currentPortfolioValue={totalValue} 
-              monthlyContribution={monthlyContribution}
+              monthlyContribution={convert(monthlyContribution)}
               onMonthlyContributionChange={setMonthlyContribution}
               portfolio_credits={userData?.portfolio_credits || 0}
               onDeductCredits={async () => {
@@ -1821,14 +1945,14 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
           >
             <InvestmentPlanner 
-              monthlyContribution={monthlyContribution}
+              monthlyContribution={convert(monthlyContribution)}
               onMonthlyContributionChange={setMonthlyContribution}
               userData={userData}
               setUserData={setUserData}
               user={user}
               setShowUpsell={setShowUpsell}
               plannerState={plannerState}
-              setPlannerState={setPlannerState}
+              setPlannerState={handlePlannerStateChange}
             />
           </motion.div>
         ) : view === 'betterleaf' ? (
@@ -2077,7 +2201,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="max-w-7xl mx-auto px-6 py-12 text-center text-[#141414]/30 text-xs">
-        <p>© 2026 Visual Portfolio Manager • Powered by Gemini AI</p>
+        <p>© 2026 Leafolio 定投管家 • Powered by Gemini AI</p>
       </footer>
 
       {/* Upsell Modal */}

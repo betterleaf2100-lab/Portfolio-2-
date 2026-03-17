@@ -39,11 +39,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         else if (period === "ytd") start.setMonth(0, 1);
         else start.setFullYear(end.getFullYear() - 1);
 
-        const historical = await yahooFinance.historical(symbol, {
+        const chartResult = await yahooFinance.chart(symbol, {
           period1: start,
           period2: end,
           interval: "1d"
         });
+
+        const historical = chartResult.quotes.map(q => ({
+          date: q.date,
+          adjClose: q.adjclose,
+          close: q.close,
+          high: q.high,
+          low: q.low,
+          open: q.open,
+          volume: q.volume
+        }));
 
         return { symbol, data: historical };
       } catch (err) {

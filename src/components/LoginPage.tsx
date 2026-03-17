@@ -7,7 +7,7 @@ import {
   signInWithEmailLink
 } from "firebase/auth";
 import { auth } from '../services/firebase';
-import { Loader2, Mail, ShieldCheck, PieChart, TrendingUp, Globe } from 'lucide-react';
+import { Loader2, Mail, ShieldCheck, PieChart, TrendingUp, Globe, Leaf } from 'lucide-react';
 import { useLanguage } from '../services/i18n';
 
 interface LoginPageProps {
@@ -146,7 +146,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ errorMsg }) => {
                  </li>
                  <li className="flex gap-3 md:gap-4">
                     <div className="w-9 h-9 md:w-10 md:h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 border border-emerald-500/20 text-emerald-400">
-                      <TrendingUp size={18} />
+                      <Leaf size={18} />
                     </div>
                     <div>
                       <h4 className="text-sm md:text-base text-white font-bold">{t('feature2Title')}</h4>
@@ -169,11 +169,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ errorMsg }) => {
         {/* Right Side: Login Form */}
         <div className="w-full max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col">
           <div className="mb-6 md:mb-8 flex items-center gap-4">
-            <img 
-              src="https://cdn.betterleaf.co/2026/0102/logo%20with%20background%20%20Small.png" 
-              alt="Logo"
-              className="w-12 h-12 md:w-14 md:h-14 rounded-xl shadow-lg border border-slate-800 object-cover"
-            />
+            <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-xl shadow-lg border border-slate-800 flex items-center justify-center text-emerald-600">
+              <Leaf size={32} />
+            </div>
             <div>
               <h2 className="text-xl md:text-2xl font-bold text-white">{t('appTitle')}</h2>
               <p className="text-slate-400 text-xs md:text-sm mt-0.5 md:mt-1">{t('loginPrompt')}</p>

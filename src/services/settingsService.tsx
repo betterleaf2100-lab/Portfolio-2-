@@ -9,9 +9,12 @@ export interface SimulationParams {
   years: number;
   monthlyExpenses: number;
   monthlyInvestment: number;
+  lumpSum?: number;
   inflationRate: number;
   manualGoal: number | null;
   useCalculatedGoal: boolean;
+  bufferYears?: number;
+  customAllocations?: { symbol: string; weight: number }[];
 }
 
 export interface UserSettings {
@@ -43,7 +46,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // Default settings if none exist
             setSettings({
               currency: 'USD',
-              language: 'en',
+              language: 'zh-TW',
               simulationParams: {
                 annualReturn: 10,
                 years: 30,
@@ -51,7 +54,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 monthlyInvestment: 800,
                 inflationRate: 3,
                 manualGoal: null,
-                useCalculatedGoal: true
+                useCalculatedGoal: true,
+                bufferYears: 2
               }
             });
           }

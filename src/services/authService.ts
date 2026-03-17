@@ -35,88 +35,88 @@ export interface UserData {
  * Step A & B: Identify Role and Handle Credit Logic
  */
 export async function syncUserRoleAndCredits(uid: string, email: string): Promise<UserData> {
-  console.log(`[Firestore] Syncing user role and credits for: ${email}`);
   const userRef = doc(db, "users", uid);
-  const whitelistRef = doc(db, "whitelisted_users", email);
+  const whitelistRef = doc(db, "whitelisted_users", email.toLowerCase());
   
-  const [userSnap, whitelistSnap] = await Promise.all([
-    getDoc(userRef),
-    getDoc(whitelistRef)
-  ]);
+  try {
+    const [userSnap, whitelistSnap] = await Promise.all([
+      getDoc(userRef),
+      getDoc(whitelistRef)
+    ]);
 
-  let role: UserRole = 'trial';
-  const today = new Date().toISOString().split('T')[0];
+    let role: UserRole = 'trial';
+    const today = new Date().toISOString().split('T')[0];
 
-  // 1. Check Admin
-  if (userSnap.exists() && userSnap.data().role === 'admin') {
-    role = 'admin';
-  } 
-  // 2. Check Whitelist
-  else if (whitelistSnap.exists()) {
-    const data = whitelistSnap.data();
-    if (data.active === true) {
-      if (data.plan === 'vip' || !data.plan) {
-        role = 'vip';
-      } else if (data.plan === 'student') {
-        role = 'student';
-      }
-    }
-  }
-
-  let userData: UserData;
-
-  if (!userSnap.exists()) {
-    // New User Initialization
-    userData = {
-      portfolio_credits: STUDENT_TRIAL_LIMIT,
-      role: role,
-      email: email,
-      last_reset_date: today
-    };
-    await setDoc(userRef, userData);
-  } else {
-    const currentData = userSnap.data() as any;
-    let newCredits = currentData.portfolio_credits ?? currentData.credits ?? STUDENT_TRIAL_LIMIT;
-    
-    // Credit Logic
-    if (role === 'admin') {
-      // Admin has unlimited, but we keep a high number or just don't deduct
-      newCredits = 999999;
-    } else if (role === 'vip') {
-      if (currentData.last_reset_date !== today) {
-        newCredits = VIP_DAILY_LIMIT;
+    // Determine role based on Whitelist
+    if (whitelistSnap.exists()) {
+      const data = whitelistSnap.data();
+      const plan = data.plan?.toLowerCase();
+      
+      if (plan === 'admin' || plan === 'vip' || plan === 'student' || plan === 'trial') {
+        role = plan as UserRole;
+      } else {
+        console.warn(`[Firestore] Unknown plan in whitelist: "${data.plan}", defaulting to trial`);
+        role = 'trial';
       }
     } else {
-      // Student & Trial
-      if (newCredits > STUDENT_TRIAL_LIMIT) {
-        newCredits = STUDENT_TRIAL_LIMIT;
-      }
+      role = 'trial';
     }
 
-    userData = {
-      ...currentData,
-      portfolio_credits: newCredits,
-      role: role,
-      email: email,
-      last_reset_date: today
-    };
-    
-    // Remove old field if it exists and update new field
-    await updateDoc(userRef, {
-      portfolio_credits: newCredits,
-      role: role,
-      last_reset_date: today
-    });
-  }
+    let userData: UserData;
 
-  return userData;
+    if (!userSnap.exists()) {
+      userData = {
+        portfolio_credits: STUDENT_TRIAL_LIMIT,
+        role: role,
+        email: email,
+        last_reset_date: today
+      };
+      await setDoc(userRef, userData);
+    } else {
+      const currentData = userSnap.data() as any;
+      let newCredits = currentData.portfolio_credits ?? currentData.credits ?? STUDENT_TRIAL_LIMIT;
+      
+      // Credit Logic
+      if (role === 'admin') {
+        newCredits = 999999;
+      } else if (role === 'vip') {
+        if (currentData.last_reset_date !== today) {
+          newCredits = VIP_DAILY_LIMIT;
+        }
+      } else {
+        if (newCredits > STUDENT_TRIAL_LIMIT) {
+          newCredits = STUDENT_TRIAL_LIMIT;
+        }
+      }
+
+      userData = {
+        ...currentData,
+        portfolio_credits: newCredits,
+        role: role,
+        email: email,
+        last_reset_date: today
+      };
+      
+      await updateDoc(userRef, {
+        portfolio_credits: newCredits,
+        role: role,
+        last_reset_date: today,
+        email: email // Ensure email is synced
+      });
+    }
+
+    return userData;
+  } catch (error) {
+    console.error(`[Firestore] Error in syncUserRoleAndCredits for ${email}:`, error);
+    // Return a safe default or rethrow
+    throw error;
+  }
 }
 
 /**
  * Step C: Deduction (Atomic Transaction)
  */
 export async function deductCredits(uid: string, amount: number = COST_PER_USE): Promise<boolean> {
-  console.log(`[Firestore] Attempting to deduct ${amount} credits for UID: ${uid}`);
   const userRef = doc(db, "users", uid);
 
   try {
