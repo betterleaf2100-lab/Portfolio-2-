@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'motion/react';
 import { TrendingUp, Eye, Target, Info, ArrowUpRight, ArrowDownRight, ExternalLink, RefreshCw, Upload, Loader2, Lock, Edit2, Save, Plus, Trash2, X } from 'lucide-react';
 import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -543,11 +543,14 @@ const INITIAL_BETTERLEAF_DATA: StockItem[] = [
   }
 ];
 
-export const BetterleafPortfolio: React.FC<{ role?: string }> = ({ role }) => {
+export const BetterleafPortfolio: React.FC<{ 
+  role?: string,
+  betterleafData: StockItem[],
+  isLoading: boolean,
+  setBetterleafData: React.Dispatch<React.SetStateAction<StockItem[]>>
+}> = ({ role, betterleafData, isLoading, setBetterleafData }) => {
   const { t } = useLanguage();
   const { formatCurrency } = useCurrency();
-  const [data, setData] = useState<StockItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isAdminUploading, setIsAdminUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isEditing, setIsEditing] = useState(false);
@@ -559,69 +562,6 @@ export const BetterleafPortfolio: React.FC<{ role?: string }> = ({ role }) => {
       return () => clearTimeout(timer);
     }
   }, [uploadStatus]);
-
-  useEffect(() => {
-    const holdingRef = doc(db, "apps", APP_ID, "global", "holding");
-    const watchlistRef = doc(db, "apps", APP_ID, "global", "watchlist");
-    
-    let holdings: StockItem[] = [];
-    let watchlist: StockItem[] = [];
-    let holdingLoaded = false;
-    let watchlistLoaded = false;
-
-    const updateData = () => {
-      if (holdingLoaded && watchlistLoaded) {
-        const combined = [...holdings, ...watchlist];
-        if (combined.length === 0) {
-          setData(INITIAL_BETTERLEAF_DATA);
-        } else {
-          setData(combined);
-        }
-        setIsLoading(false);
-      }
-    };
-
-    const unsubHolding = onSnapshot(holdingRef, (doc) => {
-      if (doc.exists()) {
-        holdings = (doc.data().items || []).map((item: any) => ({ 
-          ...item, 
-          category: 'holding',
-          upside: typeof item.upside === 'number' ? Number((item.upside * 100).toFixed(1)) : item.upside 
-        }));
-      } else {
-        holdings = [];
-      }
-      holdingLoaded = true;
-      updateData();
-    }, (error) => {
-      console.error("Firestore Error in BetterleafPortfolio (holding):", error);
-      holdingLoaded = true;
-      updateData();
-    });
-
-    const unsubWatchlist = onSnapshot(watchlistRef, (doc) => {
-      if (doc.exists()) {
-        watchlist = (doc.data().items || []).map((item: any) => ({ 
-          ...item, 
-          category: 'watchlist',
-          upside: typeof item.upside === 'number' ? Number((item.upside * 100).toFixed(1)) : item.upside
-        }));
-      } else {
-        watchlist = [];
-      }
-      watchlistLoaded = true;
-      updateData();
-    }, (error) => {
-      console.error("Firestore Error in BetterleafPortfolio (watchlist):", error);
-      watchlistLoaded = true;
-      updateData();
-    });
-
-    return () => {
-      unsubHolding();
-      unsubWatchlist();
-    };
-  }, []);
 
   const syncStockData = async (id: string, symbol: string) => {
     if (!symbol) return;
@@ -714,8 +654,8 @@ export const BetterleafPortfolio: React.FC<{ role?: string }> = ({ role }) => {
     }
   };
 
-  const holdings = (isEditing ? editingData : data).filter(d => d.category === 'holding');
-  const watchlist = (isEditing ? editingData : data).filter(d => d.category === 'watchlist');
+  const holdings = (isEditing ? editingData : betterleafData).filter(d => d.category === 'holding');
+  const watchlist = (isEditing ? editingData : betterleafData).filter(d => d.category === 'watchlist');
 
   return (
     <motion.div 
@@ -762,7 +702,7 @@ export const BetterleafPortfolio: React.FC<{ role?: string }> = ({ role }) => {
                   if (isEditing) {
                     setIsEditing(false);
                   } else {
-                    setEditingData(data.map(item => ({ 
+                    setEditingData(betterleafData.map(item => ({ 
                       ...JSON.parse(JSON.stringify(item)), 
                       id: Math.random().toString(36).substr(2, 9) 
                     })));

@@ -94,7 +94,7 @@ export default function App() {
         }
       });
       isUpdatingContributionRef.current = false;
-    }, 1000);
+    }, 500);
   };
 
   const [user, setUser] = useState<User | null>(null);
@@ -118,6 +118,8 @@ export default function App() {
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [betterleafData, setBetterleafData] = useState<any[]>([]);
+  const [isBetterleafLoading, setIsBetterleafLoading] = useState(true);
 
   // Investment Planner Persisted State
   const [plannerState, setPlannerState] = useState<{
@@ -130,7 +132,6 @@ export default function App() {
     marketSentiment: string | null;
     isBacktested: boolean;
     timeRange: '1Y' | '5Y' | '10Y' | 'YTD' | 'MAX';
-    customAllocations: { symbol: string; weight: number }[];
   }>({
     lumpSum: 0,
     riskId: 'moderate',
@@ -140,73 +141,41 @@ export default function App() {
     aiReasoning: null,
     marketSentiment: null,
     isBacktested: false,
-    timeRange: '10Y',
-    customAllocations: [
-      { symbol: 'VOO', weight: 0.50 },
-      { symbol: 'QQQ', weight: 0.50 }
-    ]
+    timeRange: '10Y'
   });
 
-  const plannerDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const isUpdatingPlannerRef = useRef(false);
-
-  // Sync monthlyContribution, lumpSum, and customAllocations from settings
+  // Sync monthlyContribution and lumpSum from settings
   useEffect(() => {
-    if (settings?.simulationParams && !isUpdatingContributionRef.current && !isUpdatingPlannerRef.current) {
+    if (settings?.simulationParams && !isUpdatingContributionRef.current) {
       const p = settings.simulationParams;
       if (p.monthlyInvestment !== undefined && p.monthlyInvestment !== monthlyContribution) {
         setMonthlyContributionState(p.monthlyInvestment);
       }
-      
-      setPlannerState(prev => {
-        let changed = false;
-        const next = { ...prev };
-        
-        if (p.lumpSum !== undefined && p.lumpSum !== fromLocal(prev.lumpSum)) {
-          next.lumpSum = convert(p.lumpSum!);
-          changed = true;
-        }
-        
-        if (p.customAllocations && JSON.stringify(p.customAllocations) !== JSON.stringify(prev.customAllocations)) {
-          next.customAllocations = p.customAllocations;
-          changed = true;
-        }
-        
-        return changed ? next : prev;
-      });
+      if (p.lumpSum !== undefined && p.lumpSum !== fromLocal(plannerState.lumpSum)) {
+        setPlannerState(prev => ({ ...prev, lumpSum: convert(p.lumpSum!) }));
+      }
     }
-  }, [settings?.simulationParams, convert, fromLocal, monthlyContribution]);
+  }, [settings?.simulationParams, convert, fromLocal, monthlyContribution, plannerState.lumpSum]);
 
   const handlePlannerStateChange = (newState: any) => {
-    const oldState = plannerState;
     setPlannerState(newState);
     
-    // If lumpSum or customAllocations changed, sync to settings with debounce
-    const lumpSumChanged = newState.lumpSum !== oldState.lumpSum;
-    const allocationsChanged = JSON.stringify(newState.customAllocations) !== JSON.stringify(oldState.customAllocations);
-    
-    if (lumpSumChanged || allocationsChanged) {
-      if (plannerDebounceRef.current) clearTimeout(plannerDebounceRef.current);
-      
-      isUpdatingPlannerRef.current = true;
-      plannerDebounceRef.current = setTimeout(async () => {
-        const valUsd = fromLocal(newState.lumpSum);
-        await updateSettings({
-          simulationParams: {
-            annualReturn: 10,
-            years: 30,
-            monthlyExpenses: 800,
-            monthlyInvestment: 800,
-            inflationRate: 3,
-            manualGoal: null,
-            useCalculatedGoal: true,
-            ...(settings?.simulationParams || {}),
-            lumpSum: valUsd,
-            customAllocations: newState.customAllocations
-          }
-        });
-        isUpdatingPlannerRef.current = false;
-      }, 1000);
+    // If lumpSum changed, sync to settings in USD
+    if (newState.lumpSum !== plannerState.lumpSum) {
+      const valUsd = fromLocal(newState.lumpSum);
+      updateSettings({
+        simulationParams: {
+          annualReturn: 10,
+          years: 30,
+          monthlyExpenses: 800,
+          monthlyInvestment: 800,
+          inflationRate: 3,
+          manualGoal: null,
+          useCalculatedGoal: true,
+          ...(settings?.simulationParams || {}),
+          lumpSum: valUsd
+        }
+      });
     }
   };
   const [confirmModal, setConfirmModal] = useState<{
@@ -696,8 +665,11 @@ export default function App() {
   }, [portfolio, chartDimension, selectedCategory]);
 
   const handleRefreshData = async (isAuto = false) => {
-    const symbols = portfolio.filter(p => p.quantity > 0).map(p => p.symbol);
-    if (symbols.length === 0) return;
+    const userSymbols = portfolio.filter(p => p.quantity > 0).map(p => p.symbol);
+    const blSymbols = betterleafData.map(s => s.symbol).filter(Boolean);
+    const allSymbols = Array.from(new Set([...userSymbols, ...blSymbols]));
+    
+    if (allSymbols.length === 0) return;
     
     // Only deduct credits if NOT an auto-refresh and NOT an admin
     if (!isAuto && userData && userData.role !== 'admin') {
@@ -710,16 +682,17 @@ export default function App() {
     }
 
     setIsUploading(true);
+    setIsBetterleafLoading(true);
     try {
-      const { spyPrice: newSpyPrice, data } = await fetchMarketData(symbols);
+      const { spyPrice: newSpyPrice, data: marketData } = await fetchMarketData(allSymbols);
       setSpyPrice(newSpyPrice);
       
+      // Update User Portfolio
       const updatedPortfolio = portfolio.map(item => {
-        const market = data.find((d: any) => d.symbol === item.symbol);
+        const market = marketData.find((d: any) => d.symbol === item.symbol);
         if (market) {
           return {
             ...item,
-            // 只有當新數值大於 0 時才更新，否則保留舊值
             forwardPe: (market.forwardPe && market.forwardPe > 0) ? market.forwardPe : item.forwardPe,
             changePercent: (market.changePercent && market.changePercent !== 0) ? market.changePercent : item.changePercent,
             currentPrice: market.price || item.currentPrice,
@@ -728,18 +701,31 @@ export default function App() {
         }
         return item;
       });
-
       setPortfolio(updatedPortfolio);
-
-      // Persist to Firestore so it doesn't disappear on reload
       if (user) {
         const portfolioRef = doc(db, "users", user.uid, "apps", APP_ID, "settings", "portfolio");
         await setDoc(portfolioRef, { items: updatedPortfolio, updatedAt: serverTimestamp() });
       }
+
+      // Update Betterleaf Portfolio
+      setBetterleafData(prev => prev.map(item => {
+        const market = marketData.find((d: any) => d.symbol === item.symbol);
+        if (market) {
+          return {
+            ...item,
+            price: market.price || item.price,
+            marketCap: (market.marketCap && market.marketCap !== 'N/A') ? market.marketCap : item.marketCap,
+            forwardPe: (market.forwardPe && market.forwardPe > 0) ? market.forwardPe : item.forwardPe
+          };
+        }
+        return item;
+      }));
+
     } catch (error) {
       console.error("Error refreshing market data:", error);
     } finally {
       setIsUploading(false);
+      setIsBetterleafLoading(false);
     }
   };
 
@@ -831,14 +817,55 @@ export default function App() {
           setTransactions(txs);
         });
 
+        // Global Betterleaf Data Subscriptions
+        const blHoldingRef = doc(db, "apps", APP_ID, "global", "holding");
+        const blWatchlistRef = doc(db, "apps", APP_ID, "global", "watchlist");
+        
+        let blHoldings: any[] = [];
+        let blWatchlist: any[] = [];
+        let blHoldingLoaded = false;
+        let blWatchlistLoaded = false;
+
+        const updateBLData = () => {
+          if (blHoldingLoaded && blWatchlistLoaded) {
+            const combined = [...blHoldings, ...blWatchlist];
+            setBetterleafData(combined);
+            setIsBetterleafLoading(false);
+          }
+        };
+
+        const unsubBLHolding = onSnapshot(blHoldingRef, (doc) => {
+          if (doc.exists()) {
+            blHoldings = (doc.data().items || []).map((item: any) => ({ 
+              ...item, 
+              category: 'holding',
+              upside: typeof item.upside === 'number' ? Number((item.upside * 100).toFixed(1)) : item.upside 
+            }));
+          } else {
+            blHoldings = [];
+          }
+          blHoldingLoaded = true;
+          updateBLData();
+        });
+
+        const unsubBLWatchlist = onSnapshot(blWatchlistRef, (doc) => {
+          if (doc.exists()) {
+            blWatchlist = (doc.data().items || []).map((item: any) => ({ 
+              ...item, 
+              category: 'watchlist',
+              upside: typeof item.upside === 'number' ? Number((item.upside * 100).toFixed(1)) : item.upside
+            }));
+          } else {
+            blWatchlist = [];
+          }
+          blWatchlistLoaded = true;
+          updateBLData();
+        });
+
         // Automatic Refresh Logic
         const lastRefresh = localStorage.getItem(`last_refresh_${currentUser.uid}`);
         const today = new Date().toISOString().split('T')[0];
         if (lastRefresh !== today) {
-          // We need to wait for portfolio to be loaded before refreshing
-          // But onSnapshot is async. We'll use a timeout or a separate effect.
-          // Better: just call it, it will use the current portfolio state which might be empty initially.
-          // Actually, let's put it in a separate useEffect that depends on portfolio.length
           localStorage.setItem(`last_refresh_${currentUser.uid}`, today);
         }
 
@@ -846,6 +873,8 @@ export default function App() {
         return () => {
           unsubPortfolio();
           unsubTransactions();
+          unsubBLHolding();
+          unsubBLWatchlist();
         };
       } else {
         setUser(null);
@@ -1956,7 +1985,12 @@ export default function App() {
             />
           </motion.div>
         ) : view === 'betterleaf' ? (
-          <BetterleafPortfolio role={userData?.role} />
+          <BetterleafPortfolio 
+            role={userData?.role} 
+            betterleafData={betterleafData}
+            isLoading={isBetterleafLoading}
+            setBetterleafData={setBetterleafData}
+          />
         ) : view === 'history' ? (
           /* History View */
           <motion.div 
