@@ -28,6 +28,7 @@ export interface Transaction {
   total: number;
   currency: string;
   fxRateToUsd: number;
+  notes?: string;
 }
 
 export const extractPortfolioFromImage = async (base64Image: string) => {

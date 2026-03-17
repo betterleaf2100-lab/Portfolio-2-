@@ -555,6 +555,28 @@ export const BetterleafPortfolio: React.FC<{
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isEditing, setIsEditing] = useState(false);
   const [editingData, setEditingData] = useState<StockItem[]>([]);
+  const [globalStats, setGlobalStats] = useState({ totalValue: 2450000, avgUpside: 24.5 });
+  const [editingStats, setEditingStats] = useState({ totalValue: 2450000, avgUpside: 24.5 });
+
+  useEffect(() => {
+    const statsRef = doc(db, "apps", APP_ID, "global", "total_value");
+    const unsubscribe = onSnapshot(statsRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setGlobalStats({
+          totalValue: data.totalValue || 2450000,
+          avgUpside: data.avgUpside || 24.5
+        });
+        if (!isEditing) {
+          setEditingStats({
+            totalValue: data.totalValue || 2450000,
+            avgUpside: data.avgUpside || 24.5
+          });
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [isEditing]);
 
   useEffect(() => {
     if (uploadStatus !== 'idle') {
@@ -616,6 +638,7 @@ export const BetterleafPortfolio: React.FC<{
 
       const holdingRef = doc(db, "apps", APP_ID, "global", "holding");
       const watchlistRef = doc(db, "apps", APP_ID, "global", "watchlist");
+      const statsRef = doc(db, "apps", APP_ID, "global", "total_value");
       
       // Sanitize data: remove 'id' and any undefined fields
       const sanitize = (item: StockItem) => {
@@ -641,7 +664,8 @@ export const BetterleafPortfolio: React.FC<{
 
       await Promise.all([
         setDoc(holdingRef, { ...commonData, items: holdingItems }),
-        setDoc(watchlistRef, { ...commonData, items: watchlistItems })
+        setDoc(watchlistRef, { ...commonData, items: watchlistItems }),
+        setDoc(statsRef, { ...commonData, ...editingStats })
       ]);
       setIsEditing(false);
       setUploadStatus('success');
@@ -678,11 +702,38 @@ export const BetterleafPortfolio: React.FC<{
           <div className="grid grid-cols-2 gap-3 md:gap-4">
             <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 backdrop-blur-sm">
               <p className="text-[9px] md:text-[10px] uppercase tracking-widest text-white/40 mb-1">{t('portfolioValue')}</p>
-              <p className="text-xl md:text-2xl font-mono font-bold">{formatCurrency(2450000, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</p>
+              {isEditing ? (
+                <div className="flex items-center gap-1">
+                  <span className="text-white/40 text-xs">$</span>
+                  <input 
+                    type="number"
+                    value={editingStats.totalValue}
+                    onChange={(e) => setEditingStats(prev => ({ ...prev, totalValue: Number(e.target.value) }))}
+                    className="bg-white/20 border border-white/40 rounded px-2 py-1 text-sm font-mono font-bold w-32 outline-none focus:ring-2 focus:ring-emerald-500 text-white"
+                  />
+                </div>
+              ) : (
+                <p className="text-xl md:text-2xl font-mono font-bold">{formatCurrency(globalStats.totalValue, { maximumFractionDigits: 0, minimumFractionDigits: 0 })}</p>
+              )}
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-3 md:p-4 backdrop-blur-sm">
               <p className="text-[9px] md:text-[10px] uppercase tracking-widest text-white/40 mb-1">{t('avgUpside')}</p>
-              <p className="text-xl md:text-2xl font-mono font-bold text-emerald-400">+24.5%</p>
+              {isEditing ? (
+                <div className="flex items-center gap-1">
+                  <input 
+                    type="number"
+                    step="0.1"
+                    value={editingStats.avgUpside}
+                    onChange={(e) => setEditingStats(prev => ({ ...prev, avgUpside: Number(e.target.value) }))}
+                    className="bg-white/20 border border-white/40 rounded px-2 py-1 text-sm font-mono font-bold w-20 outline-none focus:ring-2 focus:ring-emerald-500 text-emerald-400"
+                  />
+                  <span className="text-emerald-400/40 text-xs">%</span>
+                </div>
+              ) : (
+                <p className="text-xl md:text-2xl font-mono font-bold text-emerald-400">
+                  {globalStats.avgUpside >= 0 ? '+' : ''}{globalStats.avgUpside}%
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -762,7 +813,7 @@ export const BetterleafPortfolio: React.FC<{
         
         {/* Disclaimer */}
         <div className="px-6 py-4 bg-amber-50/50 border border-amber-200/50 rounded-2xl">
-          <p className="text-[11px] text-amber-800/70 leading-relaxed text-center italic">
+          <p className="text-[11px] md:text-xs text-amber-800/70 leading-relaxed text-center italic">
             免責聲明：僅為好葉個人操作觀點，不構成投資建議。投資有風險，先求知再投資，才能有效增長財富。
           </p>
         </div>
@@ -775,8 +826,8 @@ export const BetterleafPortfolio: React.FC<{
             <Target className="text-[#141414]" size={20} />
           </div>
           <div>
-            <p className="text-sm font-bold">{t('unlockStrategy')}</p>
-            <p className="text-[10px] text-[#141414]/60">{t('joinCommunity')}</p>
+            <p className="text-sm md:text-base font-bold">{t('unlockStrategy')}</p>
+            <p className="text-[11px] md:text-sm text-[#141414]/60">{t('joinCommunity')}</p>
           </div>
         </div>
         <a 

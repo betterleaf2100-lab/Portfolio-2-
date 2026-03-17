@@ -105,6 +105,18 @@
         "last_reset_date": { "type": "string", "description": "YYYY-MM-DD" }
       },
       "required": ["portfolio_credits", "role", "email", "last_reset_date"]
+    },
+    "GlobalStats": {
+      "title": "Global Stats",
+      "description": "Global statistics for the dashboard hero section.",
+      "type": "object",
+      "properties": {
+        "totalValue": { "type": "number" },
+        "avgUpside": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["totalValue", "avgUpside", "updatedAt"]
     }
   },
   "firestore": {
@@ -119,6 +131,10 @@
     "/apps/{appId}/global/watchlist": {
       "schema": "PortfolioDoc",
       "description": "Publicly visible watchlist."
+    },
+    "/apps/{appId}/global/total_value": {
+      "schema": "GlobalStats",
+      "description": "Global statistics for the Betterleaf Portfolio hero section."
     },
     "/Planner/{riskId}/Data/allocation": {
       "schema": "RiskProfileConfig",

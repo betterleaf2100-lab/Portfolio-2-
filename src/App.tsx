@@ -57,6 +57,19 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+function cleanObject(obj: any): any {
+  if (obj === undefined) return null;
+  if (Array.isArray(obj)) return obj.map(cleanObject);
+  if (obj !== null && typeof obj === 'object' && obj.constructor.name === 'Object') {
+    return Object.fromEntries(
+      Object.entries(obj)
+        .filter(([_, v]) => v !== undefined)
+        .map(([k, v]) => [k, cleanObject(v)])
+    );
+  }
+  return obj;
+}
+
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
 import { useSettings } from './services/settingsService';
@@ -120,6 +133,32 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [betterleafData, setBetterleafData] = useState<any[]>([]);
   const [isBetterleafLoading, setIsBetterleafLoading] = useState(true);
+  const [isPortfolioLoading, setIsPortfolioLoading] = useState(true);
+  const [globalStats, setGlobalStats] = useState({ totalValue: 2450000, avgUpside: 24.5 });
+
+  useEffect(() => {
+    const statsRef = doc(db, "apps", APP_ID, "global", "total_value");
+    const unsubscribe = onSnapshot(statsRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setGlobalStats({
+          totalValue: data.totalValue || 2450000,
+          avgUpside: data.avgUpside || 24.5
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // History Filter & Pagination State
+  const [historyYear, setHistoryYear] = useState<number>(new Date().getFullYear());
+  const [historyMonth, setHistoryMonth] = useState<number>(new Date().getMonth() + 1);
+  const [historyType, setHistoryType] = useState<string>('ALL');
+  const [historyPage, setHistoryPage] = useState<number>(1);
+
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [historyYear, historyMonth, historyType]);
 
   // Investment Planner Persisted State
   const [plannerState, setPlannerState] = useState<{
@@ -292,6 +331,32 @@ export default function App() {
     if (monthlyContribution <= 0) return 0;
     return Math.min(100, (monthlyInvestmentTotal / monthlyContribution) * 100);
   }, [monthlyInvestmentTotal, monthlyContribution]);
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(tx => {
+      const date = new Date(tx.date);
+      const matchesDate = date.getFullYear() === historyYear && (date.getMonth() + 1) === historyMonth;
+      const matchesType = historyType === 'ALL' || tx.type === historyType;
+      return matchesDate && matchesType;
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions, historyYear, historyMonth, historyType]);
+
+  const paginatedTransactions = useMemo(() => {
+    const start = (historyPage - 1) * 20;
+    return filteredTransactions.slice(start, start + 20);
+  }, [filteredTransactions, historyPage]);
+
+  const totalHistoryPages = Math.ceil(filteredTransactions.length / 20);
+
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    years.add(new Date().getFullYear());
+    transactions.forEach(tx => {
+      const y = new Date(tx.date).getFullYear();
+      if (!isNaN(y)) years.add(y);
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [transactions]);
 
   const currentMilestone = useMemo(() => {
     const index = Math.floor((freedomProgress / 100) * MILESTONES_CONFIG.length);
@@ -481,7 +546,7 @@ export default function App() {
       
       // Save Portfolio to Sandbox
       const portfolioRef = doc(db, "users", user.uid, "apps", APP_ID, "settings", "portfolio");
-      await setDoc(portfolioRef, { items: updatedPortfolio, updatedAt: serverTimestamp() });
+      await setDoc(portfolioRef, cleanObject({ items: updatedPortfolio, updatedAt: serverTimestamp() }));
 
       const sysTx: any = {
         date: new Date().toISOString().split('T')[0],
@@ -514,6 +579,7 @@ export default function App() {
           total: Number(trade.quantity) * Number(trade.price) * Number(trade.fxRateToUsd),
           currency: trade.currency || 'USD',
           fxRateToUsd: Number(trade.fxRateToUsd) || 1,
+          notes: trade.notes || '',
           createdAt: serverTimestamp()
         };
 
@@ -565,7 +631,7 @@ export default function App() {
       }
       
       setPortfolio(currentPortfolio);
-      await setDoc(portfolioRef, { items: currentPortfolio, updatedAt: serverTimestamp() });
+      await setDoc(portfolioRef, cleanObject({ items: currentPortfolio, updatedAt: serverTimestamp() }));
     }
 
     setExtractedData(null);
@@ -581,7 +647,7 @@ export default function App() {
         setPortfolio(updated);
         if (user) {
           const portfolioRef = doc(db, "users", user.uid, "apps", APP_ID, "settings", "portfolio");
-          await setDoc(portfolioRef, { items: updated, updatedAt: serverTimestamp() });
+          await setDoc(portfolioRef, cleanObject({ items: updated, updatedAt: serverTimestamp() }));
         }
       }
     });
@@ -608,13 +674,21 @@ export default function App() {
     setEditingItem(null);
     if (user) {
       const portfolioRef = doc(db, "users", user.uid, "apps", APP_ID, "settings", "portfolio");
-      await setDoc(portfolioRef, { items: updated, updatedAt: serverTimestamp() });
+      await setDoc(portfolioRef, cleanObject({ items: updated, updatedAt: serverTimestamp() }));
     }
   };
 
-  const updateTransaction = (id: string, updates: Partial<Transaction>) => {
+  const updateTransaction = async (id: string, updates: Partial<Transaction>) => {
+    if (!user) return;
     setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
     setEditingItem(null);
+    
+    try {
+      const txRef = doc(db, "users", user.uid, "apps", APP_ID, "history", id);
+      await setDoc(txRef, cleanObject({ ...updates, updatedAt: serverTimestamp() }), { merge: true });
+    } catch (error) {
+      console.error("Error updating transaction:", error);
+    }
   };
 
   const filteredPortfolio = useMemo(() => {
@@ -665,7 +739,8 @@ export default function App() {
   }, [portfolio, chartDimension, selectedCategory]);
 
   const handleRefreshData = async (isAuto = false) => {
-    const userSymbols = portfolio.filter(p => p.quantity > 0).map(p => p.symbol);
+    // Only refresh symbols with quantity > 0 for user portfolio
+    const userSymbols = portfolio.filter(p => p.quantity > 0).map(p => p.symbol).filter(Boolean);
     const blSymbols = betterleafData.map(s => s.symbol).filter(Boolean);
     const allSymbols = Array.from(new Set([...userSymbols, ...blSymbols]));
     
@@ -704,7 +779,7 @@ export default function App() {
       setPortfolio(updatedPortfolio);
       if (user) {
         const portfolioRef = doc(db, "users", user.uid, "apps", APP_ID, "settings", "portfolio");
-        await setDoc(portfolioRef, { items: updatedPortfolio, updatedAt: serverTimestamp() });
+        await setDoc(portfolioRef, cleanObject({ items: updatedPortfolio, updatedAt: serverTimestamp() }));
       }
 
       // Update Betterleaf Portfolio
@@ -740,6 +815,7 @@ export default function App() {
         setIsUploading(true);
         try {
           const globalHoldingRef = doc(db, "apps", APP_ID, "global", "holding");
+          const statsRef = doc(db, "apps", APP_ID, "global", "total_value");
           
           const globalItems = portfolio.filter(p => p.quantity > 0).map(p => ({
             symbol: p.symbol,
@@ -759,7 +835,14 @@ export default function App() {
             updatedBy: user.email
           };
 
-          await setDoc(globalHoldingRef, publishData);
+          await Promise.all([
+            setDoc(globalHoldingRef, cleanObject(publishData)),
+            setDoc(statsRef, cleanObject({ 
+              totalValue: totalValue, 
+              updatedAt: serverTimestamp(), 
+              updatedBy: user.email 
+            }), { merge: true })
+          ]);
           
           alert(t('publishSuccess'));
         } catch (error) {
@@ -796,6 +879,8 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
+        setIsBetterleafLoading(true);
+        setIsPortfolioLoading(true);
         setUser(currentUser);
         const data = await syncUserRoleAndCredits(currentUser.uid, currentUser.email || "");
         setUserData(data);
@@ -810,6 +895,7 @@ export default function App() {
           } else {
             setPortfolio([]);
           }
+          setIsPortfolioLoading(false);
         });
 
         const unsubTransactions = onSnapshot(query(transactionsRef, orderBy("date", "desc"), limit(100)), (snap) => {
@@ -886,7 +972,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (user && portfolio.length > 0) {
+    // Trigger auto-refresh if user is logged in and all data has finished loading
+    if (user && !isPortfolioLoading && !isBetterleafLoading) {
       const lastRefresh = localStorage.getItem(`last_refresh_executed_${user.uid}`);
       const today = new Date().toISOString().split('T')[0];
       if (lastRefresh !== today) {
@@ -894,7 +981,7 @@ export default function App() {
         localStorage.setItem(`last_refresh_executed_${user.uid}`, today);
       }
     }
-  }, [user, portfolio.length]);
+  }, [user, isPortfolioLoading, isBetterleafLoading]);
 
   if (authLoading) {
     return (
@@ -1557,7 +1644,18 @@ export default function App() {
                           </button>
                           
                           <div className="grid grid-cols-2 gap-2 md:gap-3">
-                            <div className="col-span-2">
+                            <div className="col-span-1">
+                              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('tradeType')}</label>
+                              <select 
+                                className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs md:text-sm"
+                                value={item.tradeType}
+                                onChange={(e) => handleExtractedItemChange(i, 'tradeType', e.target.value)}
+                              >
+                                <option value="BUY">BUY</option>
+                                <option value="SELL">SELL</option>
+                              </select>
+                            </div>
+                            <div className="col-span-1">
                               <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('symbol')}</label>
                               <input 
                                 className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs md:text-sm"
@@ -1565,19 +1663,15 @@ export default function App() {
                                 onChange={(e) => handleExtractedItemChange(i, 'symbol', e.target.value)}
                               />
                             </div>
-                            {extractedData.type === 'TRADE' && (
-                              <div className="col-span-2">
-                                <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('tradeType')}</label>
-                                <select 
-                                  className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs md:text-sm"
-                                  value={item.tradeType}
-                                  onChange={(e) => handleExtractedItemChange(i, 'tradeType', e.target.value)}
-                                >
-                                  <option value="BUY">BUY</option>
-                                  <option value="SELL">SELL</option>
-                                </select>
-                              </div>
-                            )}
+                            <div className="col-span-2">
+                              <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('notes')}</label>
+                              <input 
+                                className="w-full bg-transparent border-b border-[#141414]/10 font-bold outline-none text-xs md:text-sm"
+                                value={item.notes || ''}
+                                placeholder={t('addNotes')}
+                                onChange={(e) => handleExtractedItemChange(i, 'notes', e.target.value)}
+                              />
+                            </div>
                             <div>
                               <label className="text-[9px] md:text-[10px] text-[#141414]/40 uppercase font-bold">{t('quantity')}</label>
                               <input 
@@ -1998,10 +2092,40 @@ export default function App() {
             animate={{ opacity: 1 }}
             className="bg-white rounded-3xl border border-[#141414]/5 shadow-sm overflow-hidden"
           >
-            <div className="p-8 border-b border-[#141414]/5 flex items-center justify-between">
+            <div className="p-8 border-b border-[#141414]/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h3 className="text-2xl font-bold tracking-tight">{t('transactionHistory')}</h3>
                 <p className="text-[#141414]/50">{t('transactionHistoryDesc')}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <select 
+                  value={historyType}
+                  onChange={(e) => setHistoryType(e.target.value)}
+                  className="bg-[#141414]/5 border-none rounded-xl px-4 py-2 text-sm font-medium outline-none cursor-pointer hover:bg-[#141414]/10 transition-colors"
+                >
+                  <option value="ALL">{t('allTypes')}</option>
+                  <option value="BUY">{t('buy')}</option>
+                  <option value="SELL">{t('sell')}</option>
+                  <option value="HOLDING_UPDATE">{t('holdingUpdate')}</option>
+                </select>
+                <select 
+                  value={historyYear}
+                  onChange={(e) => setHistoryYear(Number(e.target.value))}
+                  className="bg-[#141414]/5 border-none rounded-xl px-4 py-2 text-sm font-medium outline-none cursor-pointer hover:bg-[#141414]/10 transition-colors"
+                >
+                  {availableYears.map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+                <select 
+                  value={historyMonth}
+                  onChange={(e) => setHistoryMonth(Number(e.target.value))}
+                  className="bg-[#141414]/5 border-none rounded-xl px-4 py-2 text-sm font-medium outline-none cursor-pointer hover:bg-[#141414]/10 transition-colors"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                    <option key={m} value={m}>{m}月</option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -2013,11 +2137,12 @@ export default function App() {
                     <th className="px-8 py-4">{t('asset')}</th>
                     <th className="px-8 py-4">{t('quantity')}</th>
                     <th className="px-8 py-4">{t('price')}</th>
+                    <th className="px-8 py-4">{t('notes')}</th>
                     <th className="px-8 py-4 text-right">{t('total')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#141414]/5">
-                  {transactions.map((tx) => (
+                  {paginatedTransactions.map((tx) => (
                     <tr key={tx.id} className="hover:bg-[#141414]/2 transition-colors group">
                       <td className="px-8 py-6 text-sm text-[#141414]/60">
                         {editingItem?.id === tx.id && editingItem.type === 'history' ? (
@@ -2111,6 +2236,18 @@ export default function App() {
                           ) : '-'
                         )}
                       </td>
+                      <td className="px-8 py-6 text-sm">
+                        {editingItem?.id === tx.id && editingItem.type === 'history' ? (
+                          <input 
+                            className="bg-transparent border-b border-[#141414] outline-none w-full min-w-[100px]"
+                            defaultValue={tx.notes || ''}
+                            placeholder={t('addNotes')}
+                            onBlur={(e) => updateTransaction(tx.id, { notes: e.target.value })}
+                          />
+                        ) : (
+                          <span className="text-[#141414]/60 italic">{tx.notes || '-'}</span>
+                        )}
+                      </td>
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-4">
                           <span className="font-bold">
@@ -2134,16 +2271,42 @@ export default function App() {
                       </td>
                     </tr>
                   ))}
-                  {transactions.length === 0 && (
+                  {paginatedTransactions.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-8 py-20 text-center text-[#141414]/30">
-                        No transactions recorded yet.
+                      <td colSpan={7} className="px-8 py-12 text-center text-[#141414]/30">
+                        {t('noTransactions')}
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
+            {totalHistoryPages > 1 && (
+              <div className="p-8 border-t border-[#141414]/5 flex items-center justify-between">
+                <p className="text-sm text-[#141414]/40">
+                  Showing {(historyPage - 1) * 20 + 1} to {Math.min(historyPage * 20, filteredTransactions.length)} of {filteredTransactions.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button 
+                    disabled={historyPage === 1}
+                    onClick={() => setHistoryPage(p => p - 1)}
+                    className="p-2 rounded-xl hover:bg-[#141414]/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <ChevronRight size={20} className="rotate-180" />
+                  </button>
+                  <span className="text-sm font-medium px-4">
+                    {historyPage} / {totalHistoryPages}
+                  </span>
+                  <button 
+                    disabled={historyPage === totalHistoryPages}
+                    onClick={() => setHistoryPage(p => p + 1)}
+                    className="p-2 rounded-xl hover:bg-[#141414]/5 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              </div>
+            )}
           </motion.div>
         ) : null}
 

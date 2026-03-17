@@ -25,6 +25,7 @@ export const translations: Translations = {
   publishGlobal: { 'zh-TW': '發佈到全局', 'zh-CN': '发布到全局', 'en': 'Publish to Global' },
   refreshData: { 'zh-TW': '刷新市場數據', 'zh-CN': '刷新市场数据', 'en': 'Refresh Market Data' },
   betaWeighted: { 'zh-TW': '貝塔加權', 'zh-CN': '贝塔加权', 'en': 'Beta Weighted' },
+  refreshCooldown: { 'zh-TW': '請稍候 {minutes} 分鐘再刷新，數據目前仍處於緩存期。', 'zh-CN': '请稍候 {minutes} 分钟再刷新，数据目前仍处于缓存期。', 'en': 'Please wait {minutes} minutes before refreshing again. Data is currently cached.' },
   avgPe: { 'zh-TW': '加權平均本益比', 'zh-CN': '加权平均本益比', 'en': 'Avg. P/E' },
   totalValue: { 'zh-TW': '總價值', 'zh-CN': '总价值', 'en': 'Total Value' },
   asset: { 'zh-TW': '資產', 'zh-CN': '资产', 'en': 'Asset' },
@@ -50,6 +51,8 @@ export const translations: Translations = {
   sector: { 'zh-TW': '板塊', 'zh-CN': '板块', 'en': 'Sector' },
   country: { 'zh-TW': '國家', 'zh-CN': '国家', 'en': 'Country' },
   confirm: { 'zh-TW': '確認', 'zh-CN': '确认', 'en': 'Confirm' },
+  notes: { 'zh-TW': '筆記', 'zh-CN': '笔记', 'en': 'Notes' },
+  addNotes: { 'zh-TW': '新增筆記...', 'zh-CN': '新增笔记...', 'en': 'Add notes...' },
   
   assetType: { 'zh-TW': '資產類型', 'zh-CN': '资产类型', 'en': 'Asset Type' },
   stock: { 'zh-TW': '股票', 'zh-CN': '股票', 'en': 'Stock' },
@@ -69,6 +72,8 @@ export const translations: Translations = {
   
   transactionHistory: { 'zh-TW': '交易歷史', 'zh-CN': '交易历史', 'en': 'Transaction History' },
   transactionHistoryDesc: { 'zh-TW': '所有投資組合更新和交易的完整日誌。', 'zh-CN': '所有投资组合更新和交易的完整日志。', 'en': 'A complete log of all your portfolio updates and trades.' },
+  allTypes: { 'zh-TW': '所有類型', 'zh-CN': '所有类型', 'en': 'All Types' },
+  holdingUpdate: { 'zh-TW': '持倉更新', 'zh-CN': '持仓更新', 'en': 'Holding Update' },
   date: { 'zh-TW': '日期', 'zh-CN': '日期', 'en': 'Date' },
   type: { 'zh-TW': '類型', 'zh-CN': '类型', 'en': 'Type' },
   
