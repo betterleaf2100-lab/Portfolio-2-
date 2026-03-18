@@ -70,7 +70,11 @@ function cleanObject(obj: any): any {
   return obj;
 }
 
-const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+const COLORS = [
+  '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4',
+  '#f97316', '#14b8a6', '#6366f1', '#a855f7', '#d946ef', '#f43f5e', '#84cc16', '#eab308',
+  '#64748b'
+];
 
 import { useSettings } from './services/settingsService';
 
@@ -537,6 +541,33 @@ export default function App() {
     if (!extractedData || !user) return;
 
     if (extractedData.type === 'PORTFOLIO') {
+      const normalizeSector = (s: string) => {
+        const sector = s.trim();
+        if (sector.toLowerCase().includes('financial')) return 'Financial Services';
+        if (sector.toLowerCase().includes('tech')) return 'Technology';
+        if (sector.toLowerCase().includes('health')) return 'Healthcare';
+        if (sector.toLowerCase().includes('consumer cyclical')) return 'Consumer Cyclical';
+        if (sector.toLowerCase().includes('consumer defensive')) return 'Consumer Defensive';
+        if (sector.toLowerCase().includes('communication')) return 'Communication Services';
+        if (sector.toLowerCase().includes('industrial')) return 'Industrials';
+        if (sector.toLowerCase().includes('energy')) return 'Energy';
+        if (sector.toLowerCase().includes('material')) return 'Basic Materials';
+        if (sector.toLowerCase().includes('real estate')) return 'Real Estate';
+        if (sector.toLowerCase().includes('utilit')) return 'Utilities';
+        return sector || 'Others';
+      };
+
+      const normalizeCountry = (c: string) => {
+        const country = c.trim();
+        if (['usa', 'united states', 'us'].includes(country.toLowerCase())) return 'USA';
+        if (['taiwan', 'tw'].includes(country.toLowerCase())) return 'Taiwan';
+        if (['hong kong', 'hk'].includes(country.toLowerCase())) return 'Hong Kong';
+        if (['china', 'cn'].includes(country.toLowerCase())) return 'China';
+        if (['uk', 'united kingdom'].includes(country.toLowerCase())) return 'UK';
+        if (['germany', 'de'].includes(country.toLowerCase())) return 'Germany';
+        return country || 'Global';
+      };
+
       const newItems: PortfolioItem[] = extractedData.items.map((item: any) => ({
         symbol: item.symbol,
         name: item.name || item.symbol,
@@ -549,8 +580,8 @@ export default function App() {
         fxRateToUsd: Number(item.fxRateToUsd) || 1,
         forwardPe: Number(item.forwardPe) || 0,
         changePercent: Number(item.changePercent) || 0,
-        sector: item.sector || 'Others',
-        country: item.country || 'Unknown',
+        sector: normalizeSector(item.sector || 'Others'),
+        country: normalizeCountry(item.country || 'Global'),
         assetType: item.assetType || 'Stock'
       }));
 
@@ -562,7 +593,31 @@ export default function App() {
         newItems.forEach(newItem => {
           const idx = merged.findIndex(p => p.symbol === newItem.symbol);
           if (idx >= 0) {
-            merged[idx] = newItem; // Update existing
+            const existing = merged[idx];
+            const newQty = existing.quantity + newItem.quantity;
+            
+            // Recalculate average price (weighted average)
+            const existingValueUsd = existing.quantity * existing.averagePrice * existing.fxRateToUsd;
+            const newValueUsd = newItem.quantity * newItem.averagePrice * newItem.fxRateToUsd;
+            const totalValueUsd = existingValueUsd + newValueUsd;
+            
+            const newAvgUsd = totalValueUsd / newQty;
+            
+            // If currencies match, keep the original currency average price
+            const newAvgPrice = (existing.currency === newItem.currency) 
+              ? (existing.quantity * existing.averagePrice + newItem.quantity * newItem.averagePrice) / newQty
+              : newAvgUsd / newItem.fxRateToUsd;
+
+            merged[idx] = {
+              ...existing,
+              quantity: newQty,
+              averagePrice: newAvgPrice,
+              currentPrice: newItem.currentPrice || existing.currentPrice,
+              fxRateToUsd: newItem.fxRateToUsd,
+              value: newQty * (newItem.currentPrice || existing.currentPrice) * newItem.fxRateToUsd,
+              changePercent: newItem.changePercent || existing.changePercent,
+              forwardPe: newItem.forwardPe || existing.forwardPe
+            };
           } else {
             merged.push(newItem); // Add new
           }
@@ -728,6 +783,35 @@ export default function App() {
     const activePortfolio = portfolio.filter(item => item.quantity > 0.000001);
     
     const result = (() => {
+      // Special case: Drilling down into "Others"
+      if (selectedCategory === t('others')) {
+        // We need to find which items were grouped into "Others" in the top-level view
+        const fullList = (() => {
+          if (chartDimension === 'symbol') {
+            return activePortfolio.map(item => ({
+              name: item.symbol,
+              value: item.quantity * item.currentPrice * item.fxRateToUsd,
+              isAsset: true,
+              symbol: item.symbol
+            }));
+          }
+          const groups: Record<string, number> = {};
+          activePortfolio.forEach(item => {
+            const key = item[chartDimension] || 'Others';
+            groups[key] = (groups[key] || 0) + (item.quantity * item.currentPrice * item.fxRateToUsd);
+          });
+          return Object.entries(groups).map(([name, value]) => ({ 
+            name, 
+            value,
+            isAsset: false,
+            symbol: undefined
+          }));
+        })();
+        
+        const sortedFull = fullList.sort((a, b) => b.value - a.value);
+        return sortedFull.slice(15);
+      }
+
       // Drill down logic: If a category is selected and we are not in 'symbol' view
       if (selectedCategory && chartDimension !== 'symbol') {
         return activePortfolio
@@ -763,8 +847,27 @@ export default function App() {
       }));
     })();
 
-    return result.sort((a, b) => b.value - a.value);
-  }, [portfolio, chartDimension, selectedCategory]);
+    const sorted = result.sort((a, b) => b.value - a.value);
+    // If we are already in a drill-down view (selectedCategory is set), 
+    // we might still want to group if there are many assets in that category.
+    // But if we just selected "Others", we definitely want to see all of them.
+    if (sorted.length <= 15 || selectedCategory === t('others')) return sorted;
+
+    const top15 = sorted.slice(0, 15);
+    const others = sorted.slice(15);
+    const othersValue = others.reduce((sum, item) => sum + item.value, 0);
+
+    return [
+      ...top15,
+      {
+        name: t('others'),
+        value: othersValue,
+        isAsset: false,
+        symbol: undefined,
+        isOthers: true
+      }
+    ];
+  }, [portfolio, chartDimension, selectedCategory, t]);
 
   const handleRefreshData = async (isAuto = false) => {
     if (!user) return;
@@ -1456,7 +1559,7 @@ export default function App() {
                             data={chartData}
                             innerRadius={80}
                             outerRadius={120}
-                            paddingAngle={5}
+                            paddingAngle={1}
                             dataKey="value"
                             onClick={(data: any) => {
                               if (window.innerWidth < 768) return;
