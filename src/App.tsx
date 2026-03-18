@@ -117,6 +117,7 @@ export default function App() {
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
   const [extractedData, setExtractedData] = useState<any>(null);
   const [view, setView] = useState<'dashboard' | 'history' | 'wealth' | 'invest' | 'betterleaf' | 'settings'>('dashboard');
   const [updateMode, setUpdateMode] = useState<'merge' | 'replace'>('merge');
@@ -404,74 +405,99 @@ export default function App() {
     setSortConfig({ key, direction });
   };
 
-  const processImage = async (file: File) => {
-    if (!user || !userData) return;
+  const processImages = async (files: File[]) => {
+    if (!user || !userData || files.length === 0) return;
+
+    // Limit to 4 images
+    const filesToProcess = files.slice(0, 4);
+    const cost = filesToProcess.length * 2; // 2 credits per image
 
     // Credit Check & Deduction
     if (userData.role !== 'admin') {
-      const success = await deductCredits(user.uid);
+      const success = await deductCredits(user.uid, cost);
       if (!success) {
         setShowUpsell(true);
         return;
       }
       // Update local credits optimistically or wait for sync
-      setUserData(prev => prev ? { ...prev, portfolio_credits: prev.portfolio_credits - 2 } : null);
+      setUserData(prev => prev ? { ...prev, portfolio_credits: prev.portfolio_credits - cost } : null);
     }
 
     setIsUploading(true);
+    setUploadProgress({ current: 0, total: filesToProcess.length });
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
+      const allExtractedItems: any[] = [];
+      let combinedType = 'PORTFOLIO';
+
+      for (let i = 0; i < filesToProcess.length; i++) {
+        const file = filesToProcess[i];
+        setUploadProgress({ current: i + 1, total: filesToProcess.length });
+        
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+
         try {
           const result = await extractPortfolioFromImage(base64);
-          
-          // If we have symbols, fetch real-time data from Yahoo Finance to supplement extraction
-          if (result.items && result.items.length > 0) {
-            const symbols = result.items.map((item: any) => item.symbol).filter(Boolean);
-            if (symbols.length > 0) {
-              try {
-                const marketData = await fetchMarketData(symbols);
-                if (marketData && marketData.data) {
-                  // Merge market data into extracted items
-                  result.items = result.items.map((item: any) => {
-                    const market = marketData.data.find((d: any) => d.symbol === item.symbol);
-                    if (market) {
-                      return {
-                        ...item,
-                        currentPrice: market.price || item.currentPrice || item.price,
-                        forwardPe: market.forwardPe || item.forwardPe || 0,
-                        changePercent: market.changePercent || item.changePercent || 0,
-                        name: market.name || item.name
-                      };
-                    }
-                    return item;
-                  });
-                }
-              } catch (marketError) {
-                console.warn("Failed to fetch market data for extracted items, using AI estimates only:", marketError);
-              }
-            }
+          if (result.items) {
+            allExtractedItems.push(...result.items);
           }
-          
-          setExtractedData(result);
+          if (result.type === 'TRADE') {
+            combinedType = 'TRADE';
+          }
         } catch (err) {
-          console.error("Error in image processing pipeline:", err);
-        } finally {
-          setIsUploading(false);
+          console.error(`Error extracting from image ${file.name}:`, err);
         }
-      };
-      reader.readAsDataURL(file);
+      }
+
+      if (allExtractedItems.length > 0) {
+        let finalItems = [...allExtractedItems];
+        
+        // If we have symbols, fetch real-time data from Yahoo Finance to supplement extraction
+        const symbols = finalItems.map((item: any) => item.symbol).filter(Boolean);
+        if (symbols.length > 0) {
+          try {
+            const marketData = await fetchMarketData(symbols);
+            if (marketData && marketData.data) {
+              // Merge market data into extracted items
+              finalItems = finalItems.map((item: any) => {
+                const market = marketData.data.find((d: any) => d.symbol === item.symbol);
+                if (market) {
+                  return {
+                    ...item,
+                    currentPrice: market.price || item.currentPrice || item.price,
+                    forwardPe: market.forwardPe || item.forwardPe || 0,
+                    changePercent: market.changePercent || item.changePercent || 0,
+                    name: market.name || item.name
+                  };
+                }
+                return item;
+              });
+            }
+          } catch (marketError) {
+            console.warn("Failed to fetch market data for extracted items, using AI estimates only:", marketError);
+          }
+        }
+        
+        setExtractedData({
+          type: combinedType,
+          items: finalItems
+        });
+      }
     } catch (error) {
-      console.error("Error processing image:", error);
+      console.error("Error processing images:", error);
+    } finally {
       setIsUploading(false);
+      setUploadProgress(null);
     }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    processImage(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    processImages(files);
   };
 
   React.useEffect(() => {
@@ -483,7 +509,7 @@ export default function App() {
         if (items[i].type.indexOf("image") !== -1) {
           const file = items[i].getAsFile();
           if (file) {
-            processImage(file);
+            processImages([file]);
             break;
           }
         }
@@ -492,7 +518,7 @@ export default function App() {
 
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
-  }, [portfolio]); // Re-bind if needed, though processImage is stable
+  }, [portfolio]); // Re-bind if needed, though processImages is stable
 
   const handleExtractedItemChange = (index: number, field: string, value: any) => {
     if (!extractedData) return;
@@ -1601,9 +1627,9 @@ export default function App() {
                       e.preventDefault();
                       e.stopPropagation();
                       setIsDragging(false);
-                      const file = e.dataTransfer.files?.[0];
-                      if (file && file.type.startsWith('image/')) {
-                        processImage(file);
+                      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+                      if (files.length > 0) {
+                        processImages(files);
                       }
                     }}
                     className={cn(
@@ -1615,7 +1641,11 @@ export default function App() {
                     {isUploading ? (
                       <div className="flex flex-col items-center">
                         <Loader2 className="animate-spin mb-3 md:mb-4" size={24} />
-                        <p className="text-xs md:text-sm font-medium">{t('analyzingImage')}</p>
+                        <p className="text-xs md:text-sm font-medium">
+                          {uploadProgress 
+                            ? t('analyzingProgress', { current: uploadProgress.current, total: uploadProgress.total })
+                            : t('analyzingImage')}
+                        </p>
                       </div>
                     ) : (
                       <>
@@ -1630,6 +1660,7 @@ export default function App() {
                       accept="image/*" 
                       onChange={handleFileUpload}
                       disabled={isUploading}
+                      multiple
                     />
                   </label>
                 </div>

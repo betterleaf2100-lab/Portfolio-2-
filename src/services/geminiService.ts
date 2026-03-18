@@ -31,22 +31,26 @@ export interface Transaction {
   notes?: string;
 }
 
-export const extractPortfolioFromImage = async (base64Image: string) => {
+export const extractPortfolioFromImage = async (base64Images: string | string[]) => {
+  const images = Array.isArray(base64Images) ? base64Images : [base64Images];
+  console.log(`[API] Calling Gemini to extract portfolio from ${images.length} image(s)...`);
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
   
+  const imageParts = images.map(img => ({
+    inlineData: {
+      mimeType: "image/png",
+      data: img.split(',')[1] || img,
+    },
+  }));
+
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: [
       {
         parts: [
+          ...imageParts,
           {
-            inlineData: {
-              mimeType: "image/png",
-              data: base64Image.split(',')[1] || base64Image,
-            },
-          },
-          {
-            text: "Extract the investment portfolio or trade information from this screenshot. For each asset, identify: symbol, name, quantity, price (average cost), currency, estimated exchange rate to USD (fxRateToUsd), sector, country, and asset type. \n\nIMPORTANT: For the 'symbol' field, ensure it is compatible with Yahoo Finance. If it is a non-US stock, append the correct suffix (e.g., .HK for Hong Kong, .KL for Malaysia, .SI for Singapore, .TW for Taiwan, .SS for Shanghai, .SZ for Shenzhen, .TO for Toronto, etc.) based on the exchange or country. \n\nTRADE DETECTION: If the screenshot shows a single transaction, determine if it is a 'BUY' or 'SELL'. Note that '平倉' (Close position) or '賣出' (Sell) should be identified as 'SELL'. '開倉' (Open position) or '買入' (Buy) should be identified as 'BUY'. If both '開倉' and '平倉' are present in a history view, it usually represents a closed trade, so identify the '平倉' part as a 'SELL' transaction with the corresponding price and quantity.\n\nOnly extract what is visible in the image. Do not search for external market data like P/E or Beta here. Return the data in a structured format.",
+            text: "Extract the investment portfolio or trade information from these screenshot(s). For each asset, identify: symbol, name, quantity, price (average cost), currency, estimated exchange rate to USD (fxRateToUsd), sector, country, and asset type. \n\nIMPORTANT: For the 'symbol' field, ensure it is compatible with Yahoo Finance. If it is a non-US stock, append the correct suffix (e.g., .HK for Hong Kong, .KL for Malaysia, .SI for Singapore, .TW for Taiwan, .SS for Shanghai, .SZ for Shenzhen, .TO for Toronto, etc.) based on the exchange or country. \n\nTRADE DETECTION: If the screenshots show a single transaction, determine if it is a 'BUY' or 'SELL'. Note that '平倉' (Close position) or '賣出' (Sell) should be identified as 'SELL'. '開倉' (Open position) or '買入' (Buy) should be identified as 'BUY'. If both '開倉' and '平倉' are present in a history view, it usually represents a closed trade, so identify the '平倉' part as a 'SELL' transaction with the corresponding price and quantity.\n\nOnly extract what is visible in the images. Do not search for external market data like P/E or Beta here. Return the data in a structured format.",
           },
         ],
       },
@@ -95,16 +99,19 @@ export const extractPortfolioFromImage = async (base64Image: string) => {
 export const fetchMarketData = async (symbols: string[]) => {
   if (symbols.length === 0) return { spyPrice: 0, data: [] };
   
+  console.log(`[API] Fetching market data for: ${symbols.join(', ')}`);
   try {
     const response = await fetch(`/api/market-data?symbols=${symbols.join(',')}`);
     if (!response.ok) {
       throw new Error('Failed to fetch market data');
     }
     const data = await response.json();
+    console.log("[API] Market data received successfully");
     return data;
   } catch (error) {
     console.error("Error fetching market data from API:", error);
     // Fallback to Gemini if API fails
+    console.log("[API] Falling back to Gemini for market data...");
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
     const geminiResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -139,6 +146,7 @@ export const fetchMarketData = async (symbols: string[]) => {
 };
 
 export const analyzePortfolio = async (portfolio: PortfolioItem[]) => {
+  console.log("[API] Calling Gemini to analyze portfolio...");
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
   
   const portfolioSummary = portfolio
@@ -183,6 +191,7 @@ export interface Allocation {
 }
 
 export const getAIProjectionParams = async (portfolio: Allocation[], stats: any) => {
+  console.log("[API] Calling Gemini to get AI projection parameters...");
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
   
   const prompt = `As an expert AI financial strategist and macroeconomist, analyze this investment portfolio and its historical performance to provide parameters for a sophisticated 10-year Monte Carlo growth simulation.

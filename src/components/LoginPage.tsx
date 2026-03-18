@@ -247,7 +247,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ errorMsg }) => {
           {/* Footer Links for Branding Verification */}
           <div className="mt-8 pt-4 border-t border-slate-800 flex justify-center gap-6 text-xs text-slate-500">
              <a 
-               href="https://growingbar.co/app-terms/" 
+               href="https://www.betterleaf.co/app/terms" 
                target="_blank" 
                rel="noopener noreferrer"
                className="hover:text-slate-300 transition-colors border-b border-transparent hover:border-slate-300"
@@ -255,7 +255,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ errorMsg }) => {
                {t('termsOfService')}
              </a>
              <a 
-               href="https://growingbar.co/app-privacy/" 
+               href="https://www.betterleaf.co/app/privacy" 
                target="_blank" 
                rel="noopener noreferrer"
                className="hover:text-slate-300 transition-colors border-b border-transparent hover:border-slate-300"
