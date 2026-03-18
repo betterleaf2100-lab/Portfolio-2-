@@ -20,6 +20,7 @@ export interface SimulationParams {
 export interface UserSettings {
   currency: string;
   language: string;
+  onboardingCompleted: boolean;
   simulationParams: SimulationParams;
 }
 
@@ -47,6 +48,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             setSettings({
               currency: 'USD',
               language: 'zh-TW',
+              onboardingCompleted: false,
               simulationParams: {
                 annualReturn: 10,
                 years: 30,

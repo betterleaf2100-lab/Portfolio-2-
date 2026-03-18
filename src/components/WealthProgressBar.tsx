@@ -49,6 +49,7 @@ import { useLanguage } from '../services/i18n';
 import { useCurrency, SUPPORTED_CURRENCIES } from '../services/currencyService';
 import { useSettings } from '../services/settingsService';
 import { MILESTONES_CONFIG } from '../constants/milestones';
+import { OnboardingFlow, HelpIcon } from './OnboardingFlow';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -63,6 +64,7 @@ interface WealthProgressBarProps {
   portfolio_credits: number;
   onDeductCredits: () => Promise<void>;
   role?: string;
+  onHelpClick?: (step: number) => void;
 }
 
 export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({ 
@@ -71,7 +73,8 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
   onMonthlyContributionChange,
   portfolio_credits,
   onDeductCredits,
-  role
+  role,
+  onHelpClick
 }) => {
   const { t } = useLanguage();
   const { currency, formatCurrency, formatLocal, convert, fromLocal, rates } = useCurrency();
@@ -455,10 +458,13 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
         {/* Simulation Inputs */}
         <div className="space-y-6">
           <div className="bg-white p-5 md:p-8 rounded-3xl border border-[#141414]/5 shadow-sm">
-            <h3 className="text-base md:text-lg font-bold mb-6 flex items-center gap-2">
-              <Calculator size={20} />
-              {t('simulationSettings')}
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-base md:text-lg font-bold flex items-center gap-2">
+                <Calculator size={20} />
+                {t('simulationSettings')}
+              </h3>
+              {onHelpClick && <HelpIcon onClick={() => onHelpClick(3)} />}
+            </div>
             <div className="space-y-6">
               <div>
                 <div className="flex justify-between mb-2">

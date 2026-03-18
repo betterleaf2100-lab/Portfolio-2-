@@ -19,6 +19,7 @@ export const translations: Translations = {
   settings: { 'zh-TW': '設定', 'zh-CN': '设定', 'en': 'Settings' },
   currency: { 'zh-TW': '貨幣', 'zh-CN': '货币', 'en': 'Currency' },
   language: { 'zh-TW': '語言', 'zh-CN': '语言', 'en': 'Language' },
+  back: { 'zh-TW': '返回', 'zh-CN': '返回', 'en': 'Back' },
   logout: { 'zh-TW': '登出', 'zh-CN': '登出', 'en': 'Logout' },
   vipBadge: { 'zh-TW': 'VIP 每日更新', 'zh-CN': 'VIP 每日更新', 'en': 'VIP Daily' },
   portfolio_credits: { 'zh-TW': '額度', 'zh-CN': '额度', 'en': 'Credits' },
@@ -414,6 +415,26 @@ export const translations: Translations = {
   standardDeviation: { 'zh-TW': '標準差', 'zh-CN': '标准差', 'en': 'Standard Deviation' },
   benchmarkCorrelation: { 'zh-TW': '基準相關性', 'zh-CN': '基准相关性', 'en': 'Benchmark Correlation' },
   neutral: { 'zh-TW': '中性', 'zh-CN': '中性', 'en': 'NEUTRAL' },
+  
+  // Onboarding
+  onboardingStep1Title: { 'zh-TW': '歡迎使用 Leafolio！', 'zh-CN': '欢迎使用 Leafolio！', 'en': 'Welcome to Leafolio!' },
+  onboardingStep1Desc: { 'zh-TW': '讓我們先設定您的偏好語言與貨幣。', 'zh-CN': '让我们先设定您的偏好语言与货币。', 'en': 'Let\'s start by setting your preferred language and currency.' },
+  onboardingStep2Title: { 'zh-TW': '您的財務概況', 'zh-CN': '您的财务概况', 'en': 'Your Financial Profile' },
+  onboardingStep2Desc: { 'zh-TW': '請輸入您的月開銷與每月打算投資的金額。', 'zh-CN': '请输入您的月开销与每月打算投资的金额。', 'en': 'Please enter your monthly expenses and intended monthly investment.' },
+  onboardingStep3Title: { 'zh-TW': '財富自由進度', 'zh-CN': '财富自由进度', 'en': 'Wealth Freedom Progress' },
+  onboardingStep3Desc: { 'zh-TW': '這裡展示您的目標金額與當前進度。', 'zh-CN': '这里展示您的目标金额与当前进度。', 'en': 'This shows your target amount and current progress.' },
+  onboardingStep4Title: { 'zh-TW': '上傳持倉', 'zh-CN': '上传持仓', 'en': 'Upload Holdings' },
+  onboardingStep4Desc: { 'zh-TW': '引導您上傳券商持倉截圖，系統會自動分析您的投資組合。', 'zh-CN': '引导您上传券商持仓截图，系统会自动分析您的投资组合。', 'en': 'Guide you to upload brokerage screenshots, and the system will automatically analyze your portfolio.' },
+  onboardingStep4Reminder: { 'zh-TW': '提醒：截圖只需包含持倉股數量與持倉成本資訊即可。', 'zh-CN': '提醒：截图只需包含持仓股数量与持仓成本资讯即可。', 'en': 'Reminder: Screenshots only need to include the number of shares and cost information.' },
+  onboardingStep4NextTime: { 'zh-TW': '之後每次投資後，記得來這裡上傳交易單以更新記錄。', 'zh-CN': '之后每次投资后，记得来这里上传交易单以更新记录。', 'en': 'After each investment in the future, remember to come here to upload trade slips to update records.' },
+  onboardingStep5Title: { 'zh-TW': '投資規劃', 'zh-CN': '投资规划', 'en': 'Investment Planning' },
+  onboardingStep5Desc: { 'zh-TW': '根據風險偏好進行定投規劃，參考倉位配置與回報分析。', 'zh-CN': '根据风险偏好进行定投规划，参考仓位配置与回报分析。', 'en': 'Plan your investments based on risk preference, referencing allocation and ROI analysis.' },
+  onboardingStep5Final: { 'zh-TW': '趕快開始您的投資上傳吧！', 'zh-CN': '赶快开始您的投资上传吧！', 'en': 'Start your investment upload now!' },
+  next: { 'zh-TW': '下一步', 'zh-CN': '下一步', 'en': 'Next' },
+  getStarted: { 'zh-TW': '開始使用', 'zh-CN': '开始使用', 'en': 'Get Started' },
+  skip: { 'zh-TW': '跳過', 'zh-CN': '跳过', 'en': 'Skip' },
+  finish: { 'zh-TW': '完成', 'zh-CN': '完成', 'en': 'Finish' },
+  helpTooltip: { 'zh-TW': '點擊查看功能引導', 'zh-CN': '点击查看功能引导', 'en': 'Click for feature guidance' },
 };
 
 interface LanguageContextType {

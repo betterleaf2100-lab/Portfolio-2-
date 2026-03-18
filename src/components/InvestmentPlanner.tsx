@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { HelpIcon } from './OnboardingFlow';
 import { 
   TrendingUp, 
   Target, 
@@ -128,6 +129,7 @@ interface InvestmentPlannerProps {
   setShowUpsell: (show: boolean) => void;
   plannerState: any;
   setPlannerState: React.Dispatch<React.SetStateAction<any>>;
+  onHelpClick?: (step: number) => void;
 }
 
 export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({ 
@@ -138,7 +140,8 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
   user,
   setShowUpsell,
   plannerState,
-  setPlannerState
+  setPlannerState,
+  onHelpClick
 }) => {
   const { t } = useLanguage();
   const { formatCurrency, formatLocal, convert, currency, rates } = useCurrency();
@@ -895,10 +898,13 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
       <div className="space-y-4 md:space-y-8">
         <div className="bg-white p-4 md:p-8 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-8">
-            <h2 className="text-lg md:text-2xl font-bold flex items-center gap-3">
-              <Calculator className="text-emerald-600" size={24} />
-              {t('investmentPlannerTitle')}
-            </h2>
+            <div className="flex items-center justify-between w-full">
+              <h2 className="text-lg md:text-2xl font-bold flex items-center gap-3">
+                <Calculator className="text-emerald-600" size={24} />
+                {t('investmentPlannerTitle')}
+              </h2>
+              {onHelpClick && <HelpIcon onClick={() => onHelpClick(5)} />}
+            </div>
           </div>
 
           <div className="max-w-2xl">

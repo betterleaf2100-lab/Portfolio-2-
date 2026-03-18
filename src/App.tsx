@@ -47,6 +47,7 @@ import { extractPortfolioFromImage, fetchMarketData, PortfolioItem, Transaction 
 import { WealthProgressBar } from './components/WealthProgressBar';
 import { InvestmentPlanner } from './components/InvestmentPlanner';
 import { BetterleafPortfolio } from './components/BetterleafPortfolio';
+import { OnboardingFlow, HelpIcon } from './components/OnboardingFlow';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useLanguage, Language } from './services/i18n';
@@ -135,12 +136,33 @@ export default function App() {
   const [isTesting, setIsTesting] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isBetterleafLoading, setIsBetterleafLoading] = useState(true);
+  const [isPortfolioLoading, setIsPortfolioLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const completed = localStorage.getItem('onboarding_completed');
+    if (!completed && user && !isPortfolioLoading && portfolio.length === 0) {
+      setShowOnboarding(true);
+    }
+  }, [user, isPortfolioLoading, portfolio.length]);
+
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('onboarding_completed', 'true');
+    setShowOnboarding(false);
+    setOnboardingStep(undefined);
+  };
+
+  const triggerOnboardingStep = (step: number) => {
+    setOnboardingStep(step);
+    setShowOnboarding(true);
+  };
+
   const [isDragging, setIsDragging] = useState(false);
   const [betterleafData, setBetterleafData] = useState<any[]>([]);
   const blHoldingsRef = useRef<any[]>([]);
   const blWatchlistRef = useRef<any[]>([]);
-  const [isBetterleafLoading, setIsBetterleafLoading] = useState(true);
-  const [isPortfolioLoading, setIsPortfolioLoading] = useState(true);
   const [globalStats, setGlobalStats] = useState({ totalValue: 2450000, avgUpside: 24.5 });
 
   useEffect(() => {
@@ -1747,7 +1769,10 @@ export default function App() {
               {/* Upload Section */}
               <div className="bg-[#141414] text-white p-5 md:p-8 rounded-3xl shadow-xl relative overflow-hidden">
                 <div className="relative z-10">
-                  <h3 className="text-lg md:text-xl font-bold mb-1 md:mb-2">{t('updatePortfolio')}</h3>
+                  <div className="flex items-center justify-between mb-1 md:mb-2">
+                    <h3 className="text-lg md:text-xl font-bold">{t('updatePortfolio')}</h3>
+                    <HelpIcon onClick={() => triggerOnboardingStep(4)} />
+                  </div>
                   <p className="text-white/60 text-xs md:text-sm mb-4 md:mb-6">{t('updatePortfolioDesc')}</p>
                   
                   <label 
@@ -2276,6 +2301,7 @@ export default function App() {
                 }
               }}
               role={userData?.role}
+              onHelpClick={triggerOnboardingStep}
             />
           </motion.div>
         ) : view === 'invest' ? (
@@ -2292,6 +2318,7 @@ export default function App() {
               setShowUpsell={setShowUpsell}
               plannerState={plannerState}
               setPlannerState={handlePlannerStateChange}
+              onHelpClick={triggerOnboardingStep}
             />
           </motion.div>
         ) : view === 'betterleaf' ? (
@@ -2616,6 +2643,17 @@ export default function App() {
       <footer className="max-w-7xl mx-auto px-6 py-12 text-center text-[#141414]/30 text-xs">
         <p>© 2026 Leafolio 定投管家 • Powered by Gemini AI</p>
       </footer>
+
+      {/* Onboarding Flow */}
+      <AnimatePresence>
+        {showOnboarding && (
+          <OnboardingFlow 
+            onComplete={handleOnboardingComplete}
+            onViewChange={setView}
+            initialStep={onboardingStep}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Upsell Modal */}
       <AnimatePresence>
