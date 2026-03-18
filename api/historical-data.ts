@@ -3,6 +3,10 @@ import YahooFinance from 'yahoo-finance2';
 
 const yahooFinance = new YahooFinance();
 
+// Simple in-memory cache for Vercel (may be cleared on cold starts)
+const historicalCache = new Map<string, { data: any, timestamp: number }>();
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,17 +21,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const symbols = req.query.symbols as string;
+  // Set Edge Cache Control (1 hour)
+  res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=300');
+
+  const symbolsStr = req.query.symbols as string;
   const period = (req.query.period as string) || "1y";
 
-  if (!symbols) {
+  if (!symbolsStr) {
     return res.status(400).json({ error: "Symbols are required" });
   }
 
-  const symbolList = symbols.split(",");
+  const symbolList = Array.from(new Set(symbolsStr.split(",").map(s => s.trim().toUpperCase())));
+  const now = Date.now();
   
   try {
     const results = await Promise.all(symbolList.map(async (symbol) => {
+      const cacheKey = `${symbol}_${period}`;
+      const cached = historicalCache.get(cacheKey);
+      
+      if (cached && (now - cached.timestamp < CACHE_DURATION)) {
+        return cached.data;
+      }
+
       try {
         const end = new Date();
         const start = new Date();
@@ -55,7 +70,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           volume: q.volume
         }));
 
-        return { symbol, data: historical };
+        const result = { symbol, data: historical };
+        historicalCache.set(cacheKey, { data: result, timestamp: now });
+        return result;
       } catch (err) {
         return { symbol, data: [], error: String(err) };
       }

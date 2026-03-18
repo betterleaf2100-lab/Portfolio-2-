@@ -433,15 +433,14 @@ export default function App() {
                 if (marketData && marketData.data) {
                   // Merge market data into extracted items
                   result.items = result.items.map((item: any) => {
-                    const market = marketData.data.find((d: any) => d.symbol.toUpperCase() === item.symbol.toUpperCase());
+                    const market = marketData.data.find((d: any) => d.symbol === item.symbol);
                     if (market) {
                       return {
                         ...item,
                         currentPrice: market.price || item.currentPrice || item.price,
                         forwardPe: market.forwardPe || item.forwardPe || 0,
                         changePercent: market.changePercent || item.changePercent || 0,
-                        name: market.name || item.name,
-                        marketCap: market.marketCap || item.marketCap
+                        name: market.name || item.name
                       };
                     }
                     return item;
@@ -740,6 +739,22 @@ export default function App() {
   }, [portfolio, chartDimension, selectedCategory]);
 
   const handleRefreshData = async (isAuto = false) => {
+    if (!user) return;
+
+    // 5-minute cooldown for manual refresh
+    if (!isAuto) {
+      const lastRefreshTime = localStorage.getItem(`last_refresh_time_${user.uid}`);
+      const now = Date.now();
+      const COOLDOWN = 5 * 60 * 1000; // 5 minutes
+
+      if (lastRefreshTime && (now - parseInt(lastRefreshTime) < COOLDOWN)) {
+        const remainingMinutes = Math.ceil((COOLDOWN - (now - parseInt(lastRefreshTime))) / (60 * 1000));
+        alert(t('refreshCooldown', { minutes: remainingMinutes }));
+        return;
+      }
+      localStorage.setItem(`last_refresh_time_${user.uid}`, now.toString());
+    }
+
     // Only refresh symbols with quantity > 0 for user portfolio
     const userSymbols = portfolio.filter(p => p.quantity > 0).map(p => p.symbol).filter(Boolean);
     const blSymbols = betterleafData.map(s => s.symbol).filter(Boolean);
@@ -765,7 +780,7 @@ export default function App() {
       
       // Update User Portfolio
       const updatedPortfolio = portfolio.map(item => {
-        const market = marketData.find((d: any) => d.symbol.toUpperCase() === item.symbol.toUpperCase());
+        const market = marketData.find((d: any) => d.symbol === item.symbol);
         if (market) {
           return {
             ...item,
@@ -784,8 +799,8 @@ export default function App() {
       }
 
       // Update Betterleaf Portfolio
-      const updatedBetterleaf = betterleafData.map(item => {
-        const market = marketData.find((d: any) => d.symbol.toUpperCase() === item.symbol.toUpperCase());
+      setBetterleafData(prev => prev.map(item => {
+        const market = marketData.find((d: any) => d.symbol === item.symbol);
         if (market) {
           return {
             ...item,
@@ -795,22 +810,7 @@ export default function App() {
           };
         }
         return item;
-      });
-      setBetterleafData(updatedBetterleaf);
-
-      // If admin, persist to global Firestore
-      if (userData?.role === 'admin' && user) {
-        const blHoldings = updatedBetterleaf.filter(item => item.category === 'holding');
-        const blWatchlist = updatedBetterleaf.filter(item => item.category === 'watchlist');
-
-        const blHoldingRef = doc(db, "apps", APP_ID, "global", "holding");
-        const blWatchlistRef = doc(db, "apps", APP_ID, "global", "watchlist");
-
-        await Promise.all([
-          setDoc(blHoldingRef, cleanObject({ items: blHoldings, updatedAt: serverTimestamp(), updatedBy: user.email })),
-          setDoc(blWatchlistRef, cleanObject({ items: blWatchlist, updatedAt: serverTimestamp(), updatedBy: user.email }))
-        ]);
-      }
+      }));
 
     } catch (error) {
       console.error("Error refreshing market data:", error);

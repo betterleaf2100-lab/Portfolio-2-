@@ -3,6 +3,18 @@ import YahooFinance from 'yahoo-finance2';
 
 const yahooFinance = new YahooFinance();
 
+// Simple in-memory cache for Vercel (may be cleared on cold starts)
+const marketCache = new Map<string, { data: any, timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+function formatMarketCap(raw: number): string {
+  if (!raw) return "N/A";
+  if (raw >= 1e12) return (raw / 1e12).toFixed(2) + "T";
+  if (raw >= 1e9) return (raw / 1e9).toFixed(2) + "B";
+  if (raw >= 1e6) return (raw / 1e6).toFixed(2) + "M";
+  return raw.toLocaleString();
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 設置 CORS 標頭
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -18,86 +30,80 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const symbols = req.query.symbols as string;
-  if (!symbols) {
+  // Set Edge Cache Control (5 minutes)
+  res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=60');
+
+  const symbolsStr = req.query.symbols as string;
+  if (!symbolsStr) {
     return res.status(400).json({ error: "Symbols are required" });
   }
 
-  const symbolList = symbols.split(",");
+  const symbolList = Array.from(new Set(symbolsStr.split(",").map(s => s.trim().toUpperCase())));
+  const now = Date.now();
   
+  const results: any[] = [];
+  const symbolsToFetch: string[] = [];
+
+  // 1. Check Cache
+  symbolList.forEach(symbol => {
+    const cached = marketCache.get(symbol);
+    if (cached && (now - cached.timestamp < CACHE_DURATION)) {
+      results.push(cached.data);
+    } else {
+      symbolsToFetch.push(symbol);
+    }
+  });
+
   try {
-    const results = await Promise.all(symbolList.map(async (symbol) => {
-      try {
-        let quote: any = {};
-        let summary: any = null;
-        let errors: string[] = [];
-
-        try {
-          quote = await yahooFinance.quote(symbol);
-          if (!quote || Object.keys(quote).length === 0) {
-            const searchResult = await yahooFinance.search(symbol);
-            if (searchResult.quotes && searchResult.quotes.length > 0) {
-              const bestMatch: any = searchResult.quotes.find((q: any) => q.symbol.startsWith(symbol + ".") || q.symbol === symbol) || searchResult.quotes[0];
-              quote = await yahooFinance.quote(bestMatch.symbol);
-              symbol = bestMatch.symbol;
-            }
-          }
-        } catch (e: any) {
-          try {
-            const searchResult = await yahooFinance.search(symbol);
-            if (searchResult.quotes && searchResult.quotes.length > 0) {
-              const bestMatch: any = searchResult.quotes.find((q: any) => q.symbol.startsWith(symbol + ".") || q.symbol === symbol) || searchResult.quotes[0];
-              quote = await yahooFinance.quote(bestMatch.symbol);
-              symbol = bestMatch.symbol;
-            } else {
-              errors.push(`Quote Error: ${e.message || String(e)}`);
-            }
-          } catch (searchErr) {
-            errors.push(`Quote Error: ${e.message || String(e)}`);
-          }
-        }
-
-        try {
-          summary = await yahooFinance.quoteSummary(symbol, { 
-            modules: ['defaultKeyStatistics', 'price', 'summaryDetail'] 
-          });
-        } catch (e: any) {
-          errors.push(`Summary Error: ${e.message || String(e)}`);
-        }
-
-        const trailingPE = quote?.trailingPE || summary?.summaryDetail?.trailingPE || 0;
-        const forwardPE = quote?.forwardPE || summary?.summaryDetail?.forwardPE || 0;
-        let calculatedPe = 0;
+    if (symbolsToFetch.length > 0) {
+      // Use Batch Quote for all
+      const quotes = await yahooFinance.quote(symbolsToFetch);
+      const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
+      
+      for (const quote of quoteArray) {
+        if (!quote) continue;
         
-        if (trailingPE > 0 && forwardPE > 0) {
-          calculatedPe = (trailingPE + forwardPE) / 2;
-        } else if (trailingPE > 0) {
-          calculatedPe = trailingPE;
-        } else if (forwardPE > 0) {
-          calculatedPe = forwardPE;
+        // Calculate Average PE: (Trailing + Forward) / 2
+        const tPE = quote.trailingPE;
+        const fPE = quote.forwardPE;
+        let avgPe = 0;
+        
+        if (tPE && fPE) {
+          avgPe = (tPE + fPE) / 2;
+        } else {
+          avgPe = tPE || fPE || 0;
         }
 
-        return {
-          symbol,
-          price: quote?.regularMarketPrice || summary?.price?.regularMarketPrice || 0,
-          forwardPe: calculatedPe,
-          beta: summary?.defaultKeyStatistics?.beta || summary?.summaryDetail?.beta || 0,
-          name: quote?.longName || quote?.shortName || summary?.price?.longName || symbol,
-          error: errors.length > 0 ? errors.join("; ") : null
+        const prunedData = {
+          symbol: quote.symbol,
+          price: quote.regularMarketPrice || 0,
+          changePercent: quote.regularMarketChangePercent || 0,
+          forwardPe: avgPe,
+          name: quote.longName || quote.shortName || quote.symbol,
+          marketCap: formatMarketCap(quote.marketCap || 0),
+          updatedAt: now
         };
-      } catch (err: any) {
-        return { symbol, price: 0, forwardPe: 0, beta: 0, name: symbol, error: err.message || String(err) };
+        marketCache.set(quote.symbol, { data: prunedData, timestamp: now });
+        results.push(prunedData);
       }
-    }));
+    }
 
+    // Fetch SPY price (also cached)
     let spyPrice = 500;
-    try {
-      const spyQuote: any = await yahooFinance.quote('SPY');
-      spyPrice = spyQuote.regularMarketPrice || 500;
-    } catch (e) {}
+    const cachedSpy = marketCache.get('SPY');
+    if (cachedSpy && (now - cachedSpy.timestamp < CACHE_DURATION)) {
+      spyPrice = cachedSpy.data.price;
+    } else {
+      try {
+        const spyQuote: any = await yahooFinance.quote('SPY');
+        spyPrice = spyQuote.regularMarketPrice || 500;
+        marketCache.set('SPY', { data: { symbol: 'SPY', price: spyPrice }, timestamp: now });
+      } catch (e) {}
+    }
 
     res.status(200).json({ spyPrice, data: results });
   } catch (error) {
+    console.error("Yahoo Finance API Error:", error);
     res.status(500).json({ error: "Failed to fetch market data" });
   }
 }
