@@ -541,6 +541,16 @@ export default function App() {
     if (!extractedData || !user) return;
 
     if (extractedData.type === 'PORTFOLIO') {
+      const normalizeAssetType = (t: string) => {
+        const type = t.trim().toLowerCase();
+        if (type.includes('stock') || type.includes('equity')) return 'Stock';
+        if (type.includes('etf')) return 'ETF';
+        if (type.includes('fund')) return 'Fund';
+        if (type.includes('crypto')) return 'Crypto';
+        if (type.includes('bond')) return 'Bond';
+        return 'Others';
+      };
+
       const normalizeSector = (s: string) => {
         const sector = s.trim();
         if (sector.toLowerCase().includes('financial')) return 'Financial Services';
@@ -554,6 +564,7 @@ export default function App() {
         if (sector.toLowerCase().includes('material')) return 'Basic Materials';
         if (sector.toLowerCase().includes('real estate')) return 'Real Estate';
         if (sector.toLowerCase().includes('utilit')) return 'Utilities';
+        if (sector.toLowerCase().includes('digital') || sector.toLowerCase().includes('crypto')) return 'Digital Assets';
         return sector || 'Others';
       };
 
@@ -582,7 +593,7 @@ export default function App() {
         changePercent: Number(item.changePercent) || 0,
         sector: normalizeSector(item.sector || 'Others'),
         country: normalizeCountry(item.country || 'Global'),
-        assetType: item.assetType || 'Stock'
+        assetType: normalizeAssetType(item.assetType || 'Stock')
       }));
 
       let updatedPortfolio: PortfolioItem[];
