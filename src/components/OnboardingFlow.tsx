@@ -7,7 +7,7 @@ import { useSettings } from '../services/settingsService';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
-  onViewChange: (view: 'dashboard' | 'wealth' | 'invest') => void;
+  onViewChange: (view: 'dashboard' | 'wealth' | 'invest' | 'settings') => void;
   initialStep?: number;
 }
 
@@ -31,6 +31,13 @@ export function OnboardingFlow({ onComplete, onViewChange, initialStep = 1 }: On
     }
   }, [settings?.simulationParams, convert]);
 
+  useEffect(() => {
+    if (step === 1) onViewChange('settings');
+    else if (step === 2 || step === 3) onViewChange('wealth');
+    else if (step === 4) onViewChange('dashboard');
+    else if (step === 5) onViewChange('invest');
+  }, [step, onViewChange]);
+
   const handleNext = async () => {
     if (step === 1) {
       setStep(2);
@@ -49,40 +56,30 @@ export function OnboardingFlow({ onComplete, onViewChange, initialStep = 1 }: On
           monthlyInvestment: fromLocal(investment)
         }
       });
-      onViewChange('wealth');
       setStep(3);
     } else if (step === 3) {
-      onViewChange('dashboard');
       setStep(4);
     } else if (step === 4) {
-      onViewChange('invest');
       setStep(5);
     } else if (step === 5) {
+      onViewChange('dashboard');
       onComplete();
     }
   };
 
   const handleBack = () => {
-    if (step === 2) {
-      setStep(1);
-    } else if (step === 3) {
-      onViewChange('dashboard');
-      setStep(2);
-    } else if (step === 4) {
-      onViewChange('wealth');
-      setStep(3);
-    } else if (step === 5) {
-      onViewChange('dashboard');
-      setStep(4);
+    if (step > 1) {
+      setStep(step - 1);
     }
   };
 
   const handleSkip = () => {
+    onViewChange('dashboard');
     onComplete();
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed top-16 inset-x-0 bottom-0 z-[40] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

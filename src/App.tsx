@@ -138,20 +138,26 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isBetterleafLoading, setIsBetterleafLoading] = useState(true);
   const [isPortfolioLoading, setIsPortfolioLoading] = useState(true);
+  const [hasPortfolioDoc, setHasPortfolioDoc] = useState<boolean | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    const completed = localStorage.getItem('onboarding_completed');
-    if (!completed && user && !isPortfolioLoading && portfolio.length === 0) {
-      setShowOnboarding(true);
+    if (user && !isPortfolioLoading && hasPortfolioDoc === false) {
+      const completed = localStorage.getItem(`onboarding_completed_${user.uid}`);
+      if (!completed) {
+        setShowOnboarding(true);
+      }
     }
-  }, [user, isPortfolioLoading, portfolio.length]);
+  }, [user, isPortfolioLoading, hasPortfolioDoc]);
 
   const handleOnboardingComplete = () => {
-    localStorage.setItem('onboarding_completed', 'true');
+    if (user) {
+      localStorage.setItem(`onboarding_completed_${user.uid}`, 'true');
+    }
     setShowOnboarding(false);
     setOnboardingStep(undefined);
+    setView('dashboard');
   };
 
   const triggerOnboardingStep = (step: number) => {
@@ -1111,8 +1117,10 @@ export default function App() {
         const unsubPortfolio = onSnapshot(portfolioRef, (doc) => {
           if (doc.exists()) {
             setPortfolio(doc.data().items || []);
+            setHasPortfolioDoc(true);
           } else {
             setPortfolio([]);
+            setHasPortfolioDoc(false);
           }
           setIsPortfolioLoading(false);
         });
@@ -1198,6 +1206,7 @@ export default function App() {
       } else {
         setUser(null);
         setUserData(null);
+        setHasPortfolioDoc(null);
         setAuthLoading(false);
       }
     });
@@ -1260,8 +1269,9 @@ export default function App() {
                   key={item.id}
                   onClick={() => setView(item.id as any)}
                   className={cn(
-                    "px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all",
-                    view === item.id ? "bg-white shadow-sm text-[#141414]" : "text-[#141414]/60 hover:text-[#141414]"
+                    "px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all relative",
+                    view === item.id ? "bg-white shadow-sm text-[#141414]" : "text-[#141414]/60 hover:text-[#141414]",
+                    showOnboarding && view === item.id && "ring-2 ring-emerald-500 shadow-lg shadow-emerald-500/30 z-10"
                   )}
                 >
                   {item.label}
@@ -1293,8 +1303,9 @@ export default function App() {
                 <button 
                   onClick={() => setView('settings')}
                   className={cn(
-                    "p-2 rounded-xl transition-all flex items-center gap-2 text-xs font-bold",
-                    view === 'settings' ? "bg-[#141414] text-white" : "hover:bg-[#141414]/5 text-[#141414]/60 hover:text-[#141414]"
+                    "p-2 rounded-xl transition-all flex items-center gap-2 text-xs font-bold relative",
+                    view === 'settings' ? "bg-[#141414] text-white" : "hover:bg-[#141414]/5 text-[#141414]/60 hover:text-[#141414]",
+                    showOnboarding && view === 'settings' && "ring-2 ring-emerald-500 ring-offset-2 shadow-lg shadow-emerald-500/30 z-10"
                   )}
                   title={t('settings')}
                 >
