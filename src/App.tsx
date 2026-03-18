@@ -741,20 +741,6 @@ export default function App() {
   const handleRefreshData = async (isAuto = false) => {
     if (!user) return;
 
-    // 5-minute cooldown for manual refresh
-    if (!isAuto) {
-      const lastRefreshTime = localStorage.getItem(`last_refresh_time_${user.uid}`);
-      const now = Date.now();
-      const COOLDOWN = 5 * 60 * 1000; // 5 minutes
-
-      if (lastRefreshTime && (now - parseInt(lastRefreshTime) < COOLDOWN)) {
-        const remainingMinutes = Math.ceil((COOLDOWN - (now - parseInt(lastRefreshTime))) / (60 * 1000));
-        alert(t('refreshCooldown', { minutes: remainingMinutes }));
-        return;
-      }
-      localStorage.setItem(`last_refresh_time_${user.uid}`, now.toString());
-    }
-
     // Only refresh symbols with quantity > 0 for user portfolio
     const userSymbols = portfolio.filter(p => p.quantity > 0).map(p => p.symbol).filter(Boolean);
     const blSymbols = betterleafData.map(s => s.symbol).filter(Boolean);
@@ -774,44 +760,62 @@ export default function App() {
 
     setIsUploading(true);
     setIsBetterleafLoading(true);
+
     try {
-      const { spyPrice: newSpyPrice, data: marketData } = await fetchMarketData(allSymbols);
-      setSpyPrice(newSpyPrice);
+      const lastRefreshTime = localStorage.getItem(`last_refresh_time_${user.uid}`);
+      const now = Date.now();
+      const COOLDOWN = 5 * 60 * 1000; // 5 minutes
       
-      // Update User Portfolio
-      const updatedPortfolio = portfolio.map(item => {
-        const market = marketData.find((d: any) => d.symbol === item.symbol);
-        if (market) {
-          return {
-            ...item,
-            forwardPe: (market.forwardPe && market.forwardPe > 0) ? market.forwardPe : item.forwardPe,
-            changePercent: (market.changePercent && market.changePercent !== 0) ? market.changePercent : item.changePercent,
-            currentPrice: market.price || item.currentPrice,
-            marketCap: (market.marketCap && market.marketCap !== 'N/A') ? market.marketCap : item.marketCap
-          };
+      // Check if we should skip the actual API call due to cooldown
+      const shouldSkipApi = !isAuto && lastRefreshTime && (now - parseInt(lastRefreshTime) < COOLDOWN);
+
+      if (shouldSkipApi) {
+        // Simulated delay to make it feel like a refresh is happening
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        // We don't call fetchMarketData, just use existing state
+      } else {
+        const { spyPrice: newSpyPrice, data: marketData } = await fetchMarketData(allSymbols);
+        setSpyPrice(newSpyPrice);
+        
+        // Update User Portfolio
+        const updatedPortfolio = portfolio.map(item => {
+          const market = marketData.find((d: any) => d.symbol === item.symbol);
+          if (market) {
+            return {
+              ...item,
+              forwardPe: (market.forwardPe && market.forwardPe > 0) ? market.forwardPe : item.forwardPe,
+              changePercent: (market.changePercent && market.changePercent !== 0) ? market.changePercent : item.changePercent,
+              currentPrice: market.price || item.currentPrice,
+              marketCap: (market.marketCap && market.marketCap !== 'N/A') ? market.marketCap : item.marketCap
+            };
+          }
+          return item;
+        });
+        setPortfolio(updatedPortfolio);
+        if (user) {
+          const portfolioRef = doc(db, "users", user.uid, "apps", APP_ID, "settings", "portfolio");
+          await setDoc(portfolioRef, cleanObject({ items: updatedPortfolio, updatedAt: serverTimestamp() }));
         }
-        return item;
-      });
-      setPortfolio(updatedPortfolio);
-      if (user) {
-        const portfolioRef = doc(db, "users", user.uid, "apps", APP_ID, "settings", "portfolio");
-        await setDoc(portfolioRef, cleanObject({ items: updatedPortfolio, updatedAt: serverTimestamp() }));
+
+        // Update Betterleaf Portfolio
+        setBetterleafData(prev => prev.map(item => {
+          const market = marketData.find((d: any) => d.symbol === item.symbol);
+          if (market) {
+            return {
+              ...item,
+              price: market.price || item.price,
+              marketCap: (market.marketCap && market.marketCap !== 'N/A') ? market.marketCap : item.marketCap,
+              forwardPe: (market.forwardPe && market.forwardPe > 0) ? market.forwardPe : item.forwardPe
+            };
+          }
+          return item;
+        }));
+
+        // Update last refresh time only on successful real API call
+        if (!isAuto) {
+          localStorage.setItem(`last_refresh_time_${user.uid}`, now.toString());
+        }
       }
-
-      // Update Betterleaf Portfolio
-      setBetterleafData(prev => prev.map(item => {
-        const market = marketData.find((d: any) => d.symbol === item.symbol);
-        if (market) {
-          return {
-            ...item,
-            price: market.price || item.price,
-            marketCap: (market.marketCap && market.marketCap !== 'N/A') ? market.marketCap : item.marketCap,
-            forwardPe: (market.forwardPe && market.forwardPe > 0) ? market.forwardPe : item.forwardPe
-          };
-        }
-        return item;
-      }));
-
     } catch (error) {
       console.error("Error refreshing market data:", error);
     } finally {
