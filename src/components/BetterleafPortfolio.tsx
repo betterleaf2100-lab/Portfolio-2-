@@ -595,8 +595,8 @@ export const BetterleafPortfolio: React.FC<{
           ...d, 
           name: mData.name || d.name,
           price: mData.price || d.price,
-          marketCap: mData.marketCap || d.marketCap,
-          forwardPe: mData.forwardPe || d.forwardPe
+          marketCap: (mData.marketCap && mData.marketCap !== 'N/A') ? mData.marketCap : d.marketCap,
+          forwardPe: (mData.forwardPe && mData.forwardPe > 0) ? mData.forwardPe : d.forwardPe
         } : d));
       }
     } catch (error) {
@@ -618,14 +618,14 @@ export const BetterleafPortfolio: React.FC<{
           const marketDataRes = await fetchMarketData(allSymbols);
           if (marketDataRes && marketDataRes.data) {
             syncedData = editingData.map(d => {
-              const mData = marketDataRes.data.find((m: any) => m.symbol === d.symbol);
+              const mData = marketDataRes.data.find((m: any) => m.symbol.toUpperCase() === d.symbol.toUpperCase());
               if (mData) {
                 return {
                   ...d,
                   name: mData.name || d.name,
                   price: mData.price || d.price,
-                  marketCap: mData.marketCap || d.marketCap,
-                  forwardPe: mData.forwardPe || d.forwardPe
+                  marketCap: (mData.marketCap && mData.marketCap !== 'N/A') ? mData.marketCap : d.marketCap,
+                  forwardPe: (mData.forwardPe && mData.forwardPe > 0) ? mData.forwardPe : d.forwardPe
                 };
               }
               return d;

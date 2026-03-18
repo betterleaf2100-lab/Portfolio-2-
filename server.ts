@@ -63,7 +63,7 @@ async function startServer() {
             avgPe = tPE || fPE || 0;
           }
 
-          console.log(`[API] Batch Quote for ${quote.symbol}: Price=${quote.regularMarketPrice}, tPE=${tPE || 'N/A'}, fPE=${fPE || 'N/A'}, AvgPE=${avgPe.toFixed(2)}, MarketCap=${quote.marketCap || 'N/A'}`);
+          const formattedMCap = formatMarketCap(quote.marketCap || 0);
 
           const prunedData = {
             symbol: quote.symbol,
@@ -71,7 +71,7 @@ async function startServer() {
             changePercent: quote.regularMarketChangePercent || 0,
             forwardPe: avgPe,
             name: quote.longName || quote.shortName || quote.symbol,
-            marketCap: formatMarketCap(quote.marketCap || 0),
+            marketCap: formattedMCap,
             updatedAt: now
           };
           marketCache.set(quote.symbol, { data: prunedData, timestamp: now });
@@ -186,7 +186,6 @@ async function startServer() {
     const symbolList = symbols.split(",").map(s => s.trim().toUpperCase());
     
     try {
-      console.log(`[Batch Test] Fetching data for: ${symbolList.join(', ')}`);
       const results = await yahooFinance.quote(symbolList);
       res.json({ 
         count: Array.isArray(results) ? results.length : 1,
@@ -206,7 +205,6 @@ async function startServer() {
     }
 
     try {
-      console.log(`[Historical Test] Fetching data for: ${symbol} (${period})`);
       const end = new Date();
       const start = new Date();
       if (period === "1mo") start.setMonth(end.getMonth() - 1);

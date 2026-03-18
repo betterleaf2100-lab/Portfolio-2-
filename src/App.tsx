@@ -433,14 +433,15 @@ export default function App() {
                 if (marketData && marketData.data) {
                   // Merge market data into extracted items
                   result.items = result.items.map((item: any) => {
-                    const market = marketData.data.find((d: any) => d.symbol === item.symbol);
+                    const market = marketData.data.find((d: any) => d.symbol.toUpperCase() === item.symbol.toUpperCase());
                     if (market) {
                       return {
                         ...item,
                         currentPrice: market.price || item.currentPrice || item.price,
                         forwardPe: market.forwardPe || item.forwardPe || 0,
                         changePercent: market.changePercent || item.changePercent || 0,
-                        name: market.name || item.name
+                        name: market.name || item.name,
+                        marketCap: market.marketCap || item.marketCap
                       };
                     }
                     return item;
@@ -764,7 +765,7 @@ export default function App() {
       
       // Update User Portfolio
       const updatedPortfolio = portfolio.map(item => {
-        const market = marketData.find((d: any) => d.symbol === item.symbol);
+        const market = marketData.find((d: any) => d.symbol.toUpperCase() === item.symbol.toUpperCase());
         if (market) {
           return {
             ...item,
@@ -783,18 +784,21 @@ export default function App() {
       }
 
       // Update Betterleaf Portfolio
-      setBetterleafData(prev => prev.map(item => {
-        const market = marketData.find((d: any) => d.symbol === item.symbol);
-        if (market) {
-          return {
-            ...item,
-            price: market.price || item.price,
-            marketCap: (market.marketCap && market.marketCap !== 'N/A') ? market.marketCap : item.marketCap,
-            forwardPe: (market.forwardPe && market.forwardPe > 0) ? market.forwardPe : item.forwardPe
-          };
-        }
-        return item;
-      }));
+      setBetterleafData(prev => {
+        const updated = prev.map(item => {
+          const market = marketData.find((d: any) => d.symbol.toUpperCase() === item.symbol.toUpperCase());
+          if (market) {
+            return {
+              ...item,
+              price: market.price || item.price,
+              marketCap: (market.marketCap && market.marketCap !== 'N/A') ? market.marketCap : item.marketCap,
+              forwardPe: (market.forwardPe && market.forwardPe > 0) ? market.forwardPe : item.forwardPe
+            };
+          }
+          return item;
+        });
+        return updated;
+      });
 
     } catch (error) {
       console.error("Error refreshing market data:", error);

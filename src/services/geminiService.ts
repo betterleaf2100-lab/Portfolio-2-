@@ -32,7 +32,6 @@ export interface Transaction {
 }
 
 export const extractPortfolioFromImage = async (base64Image: string) => {
-  console.log("[API] Calling Gemini to extract portfolio from image...");
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
   
   const response = await ai.models.generateContent({
@@ -96,19 +95,16 @@ export const extractPortfolioFromImage = async (base64Image: string) => {
 export const fetchMarketData = async (symbols: string[]) => {
   if (symbols.length === 0) return { spyPrice: 0, data: [] };
   
-  console.log(`[API] Fetching market data for: ${symbols.join(', ')}`);
   try {
     const response = await fetch(`/api/market-data?symbols=${symbols.join(',')}`);
     if (!response.ok) {
       throw new Error('Failed to fetch market data');
     }
     const data = await response.json();
-    console.log("[API] Market data received successfully");
     return data;
   } catch (error) {
     console.error("Error fetching market data from API:", error);
     // Fallback to Gemini if API fails
-    console.log("[API] Falling back to Gemini for market data...");
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
     const geminiResponse = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -143,7 +139,6 @@ export const fetchMarketData = async (symbols: string[]) => {
 };
 
 export const analyzePortfolio = async (portfolio: PortfolioItem[]) => {
-  console.log("[API] Calling Gemini to analyze portfolio...");
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
   
   const portfolioSummary = portfolio
@@ -188,7 +183,6 @@ export interface Allocation {
 }
 
 export const getAIProjectionParams = async (portfolio: Allocation[], stats: any) => {
-  console.log("[API] Calling Gemini to get AI projection parameters...");
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
   
   const prompt = `As an expert AI financial strategist and macroeconomist, analyze this investment portfolio and its historical performance to provide parameters for a sophisticated 10-year Monte Carlo growth simulation.

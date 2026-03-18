@@ -397,7 +397,6 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
 
     const fetchAndCache = async () => {
       setIsLoading(true);
-      console.log(`[Planner] Processing riskId: ${riskId}`);
       const today = new Date().toISOString().split('T')[0];
       
       // Corrected paths based on actual Firebase structure
@@ -415,7 +414,6 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
             const symbolsMatch = JSON.stringify([...cacheSymbols].sort()) === JSON.stringify([...symbols].sort());
             
             if (cacheData.updatedAt === today && symbolsMatch) {
-              console.log(`Using cached data for ${riskId}`);
               setMarketData(cacheData.marketData);
               
               // Handle decompression if data is compressed
@@ -440,13 +438,10 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
           }
         }
 
-        console.log(`Fetching new data for ${riskId}...`);
-        console.log(`[API] Fetching historical data for: ${allSymbols.join(',')}`);
         // Fetch new data
         const [marketRes, historicalRes] = await Promise.all([
           fetchMarketData(symbols),
           fetch(`/api/historical-data?symbols=${allSymbols.join(',')}&period=max`).then(r => {
-            if (r.ok) console.log("[API] Historical data received successfully");
             return r.json();
           })
         ]);
@@ -477,7 +472,6 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
 
             // Update cache ONLY for non-custom
             if (cacheRef && riskId !== 'custom') {
-              console.log(`Attempting to update cache at: ${cacheRef.path}`);
               const compressedData = LZString.compressToUTF16(JSON.stringify(newAllData));
               
               await setDoc(cacheRef, {
@@ -487,7 +481,6 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
                 updatedAt: today,
                 timestamp: serverTimestamp()
               }, { merge: true })
-              .then(() => console.log(`Cache for ${riskId} updated successfully`))
               .catch(err => console.error(`Cache for ${riskId} update failed:`, err));
             }
           }
@@ -532,7 +525,6 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
     setIsBacktested(false);
 
     try {
-      console.log(`[Custom Backtest] Fetching data for: ${allSymbols.join(',')}`);
       const [marketRes, historicalRes] = await Promise.all([
         fetchMarketData(symbols),
         fetch(`/api/historical-data?symbols=${allSymbols.join(',')}&period=max`).then(r => r.json())
