@@ -132,6 +132,8 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [betterleafData, setBetterleafData] = useState<any[]>([]);
+  const blHoldingsRef = useRef<any[]>([]);
+  const blWatchlistRef = useRef<any[]>([]);
   const [isBetterleafLoading, setIsBetterleafLoading] = useState(true);
   const [isPortfolioLoading, setIsPortfolioLoading] = useState(true);
   const [globalStats, setGlobalStats] = useState({ totalValue: 2450000, avgUpside: 24.5 });
@@ -778,38 +780,49 @@ export default function App() {
         setSpyPrice(newSpyPrice);
         
         // Update User Portfolio
-        const updatedPortfolio = portfolio.map(item => {
-          const market = marketData.find((d: any) => d.symbol === item.symbol);
-          if (market) {
-            return {
-              ...item,
-              forwardPe: (market.forwardPe && market.forwardPe > 0) ? market.forwardPe : item.forwardPe,
-              changePercent: (market.changePercent && market.changePercent !== 0) ? market.changePercent : item.changePercent,
-              currentPrice: market.price || item.currentPrice,
-              marketCap: (market.marketCap && market.marketCap !== 'N/A') ? market.marketCap : item.marketCap
-            };
+        setPortfolio(prev => {
+          const updatedPortfolio = prev.map(item => {
+            const market = marketData.find((d: any) => d.symbol === item.symbol);
+            if (market) {
+              return {
+                ...item,
+                forwardPe: (market.forwardPe && market.forwardPe > 0) ? market.forwardPe : item.forwardPe,
+                changePercent: (market.changePercent && market.changePercent !== 0) ? market.changePercent : item.changePercent,
+                currentPrice: market.price || item.currentPrice,
+                marketCap: (market.marketCap && market.marketCap !== 'N/A') ? market.marketCap : item.marketCap
+              };
+            }
+            return item;
+          });
+          
+          if (user) {
+            const portfolioRef = doc(db, "users", user.uid, "apps", APP_ID, "settings", "portfolio");
+            setDoc(portfolioRef, cleanObject({ items: updatedPortfolio, updatedAt: serverTimestamp() }));
           }
-          return item;
+          return updatedPortfolio;
         });
-        setPortfolio(updatedPortfolio);
-        if (user) {
-          const portfolioRef = doc(db, "users", user.uid, "apps", APP_ID, "settings", "portfolio");
-          await setDoc(portfolioRef, cleanObject({ items: updatedPortfolio, updatedAt: serverTimestamp() }));
-        }
 
         // Update Betterleaf Portfolio
-        setBetterleafData(prev => prev.map(item => {
-          const market = marketData.find((d: any) => d.symbol === item.symbol);
-          if (market) {
-            return {
-              ...item,
-              price: market.price || item.price,
-              marketCap: (market.marketCap && market.marketCap !== 'N/A') ? market.marketCap : item.marketCap,
-              forwardPe: (market.forwardPe && market.forwardPe > 0) ? market.forwardPe : item.forwardPe
-            };
-          }
-          return item;
-        }));
+        setBetterleafData(prev => {
+          const updatedBLData = prev.map(item => {
+            const market = marketData.find((d: any) => d.symbol === item.symbol);
+            if (market) {
+              return {
+                ...item,
+                price: market.price || item.price,
+                marketCap: (market.marketCap && market.marketCap !== 'N/A') ? market.marketCap : item.marketCap,
+                forwardPe: (market.forwardPe && market.forwardPe > 0) ? market.forwardPe : item.forwardPe
+              };
+            }
+            return item;
+          });
+          
+          // Update refs to ensure data persists across view changes and snapshot updates
+          blHoldingsRef.current = updatedBLData.filter(d => d.category === 'holding');
+          blWatchlistRef.current = updatedBLData.filter(d => d.category === 'watchlist');
+          
+          return updatedBLData;
+        });
 
         // Update last refresh time only on successful real API call
         if (!isAuto) {
@@ -924,45 +937,59 @@ export default function App() {
         });
 
         // Global Betterleaf Data Subscriptions
-        const blHoldingRef = doc(db, "apps", APP_ID, "global", "holding");
-        const blWatchlistRef = doc(db, "apps", APP_ID, "global", "watchlist");
+        const blHoldingDocRef = doc(db, "apps", APP_ID, "global", "holding");
+        const blWatchlistDocRef = doc(db, "apps", APP_ID, "global", "watchlist");
         
-        let blHoldings: any[] = [];
-        let blWatchlist: any[] = [];
         let blHoldingLoaded = false;
         let blWatchlistLoaded = false;
 
         const updateBLData = () => {
           if (blHoldingLoaded && blWatchlistLoaded) {
-            const combined = [...blHoldings, ...blWatchlist];
+            const combined = [...blHoldingsRef.current, ...blWatchlistRef.current];
             setBetterleafData(combined);
             setIsBetterleafLoading(false);
           }
         };
 
-        const unsubBLHolding = onSnapshot(blHoldingRef, (doc) => {
+        const unsubBLHolding = onSnapshot(blHoldingDocRef, (doc) => {
           if (doc.exists()) {
-            blHoldings = (doc.data().items || []).map((item: any) => ({ 
-              ...item, 
-              category: 'holding',
-              upside: typeof item.upside === 'number' ? Number((item.upside * 100).toFixed(1)) : item.upside 
-            }));
+            const newItems = (doc.data().items || []).map((item: any) => {
+              // Try to preserve current prices if they exist in the ref
+              const existing = blHoldingsRef.current.find(p => p.symbol === item.symbol);
+              return { 
+                ...item, 
+                category: 'holding',
+                price: existing?.price || item.price,
+                marketCap: existing?.marketCap || item.marketCap,
+                forwardPe: existing?.forwardPe || item.forwardPe,
+                upside: typeof item.upside === 'number' ? Number((item.upside * 100).toFixed(1)) : item.upside 
+              };
+            });
+            blHoldingsRef.current = newItems;
           } else {
-            blHoldings = [];
+            blHoldingsRef.current = [];
           }
           blHoldingLoaded = true;
           updateBLData();
         });
 
-        const unsubBLWatchlist = onSnapshot(blWatchlistRef, (doc) => {
+        const unsubBLWatchlist = onSnapshot(blWatchlistDocRef, (doc) => {
           if (doc.exists()) {
-            blWatchlist = (doc.data().items || []).map((item: any) => ({ 
-              ...item, 
-              category: 'watchlist',
-              upside: typeof item.upside === 'number' ? Number((item.upside * 100).toFixed(1)) : item.upside
-            }));
+            const newItems = (doc.data().items || []).map((item: any) => {
+              // Try to preserve current prices if they exist in the ref
+              const existing = blWatchlistRef.current.find(p => p.symbol === item.symbol);
+              return { 
+                ...item, 
+                category: 'watchlist',
+                price: existing?.price || item.price,
+                marketCap: existing?.marketCap || item.marketCap,
+                forwardPe: existing?.forwardPe || item.forwardPe,
+                upside: typeof item.upside === 'number' ? Number((item.upside * 100).toFixed(1)) : item.upside 
+              };
+            });
+            blWatchlistRef.current = newItems;
           } else {
-            blWatchlist = [];
+            blWatchlistRef.current = [];
           }
           blWatchlistLoaded = true;
           updateBLData();
