@@ -559,6 +559,12 @@ export const BetterleafPortfolio: React.FC<{
   const [editingStats, setEditingStats] = useState({ totalValue: 2450000, avgUpside: 24.5 });
 
   useEffect(() => {
+    if (!isEditing) {
+      setEditingData(betterleafData);
+    }
+  }, [betterleafData, isEditing]);
+
+  useEffect(() => {
     const statsRef = doc(db, "apps", APP_ID, "global", "total_value");
     const unsubscribe = onSnapshot(statsRef, (docSnap) => {
       if (docSnap.exists()) {
