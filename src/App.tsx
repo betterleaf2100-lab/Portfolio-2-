@@ -786,9 +786,33 @@ export default function App() {
   };
 
   const filteredPortfolio = useMemo(() => {
-    if (!selectedCategory || chartDimension === 'symbol') return portfolio.filter(p => p.quantity > 0);
-    return portfolio.filter(p => p.quantity > 0 && p[chartDimension] === selectedCategory);
-  }, [portfolio, selectedCategory, chartDimension]);
+    const active = portfolio.filter(p => p.quantity > 0.000001);
+    if (!selectedCategory) return active;
+    
+    if (selectedCategory === t('others')) {
+      if (chartDimension === 'symbol') {
+        const sortedAssets = [...active].sort((a, b) => (b.quantity * b.currentPrice * b.fxRateToUsd) - (a.quantity * a.currentPrice * a.fxRateToUsd));
+        return sortedAssets.slice(15);
+      }
+      
+      // Find which categories are in "Others"
+      const groups: Record<string, number> = {};
+      active.forEach(item => {
+        const key = item[chartDimension] || 'Others';
+        groups[key] = (groups[key] || 0) + (item.quantity * item.currentPrice * item.fxRateToUsd);
+      });
+      const sortedCategories = Object.entries(groups)
+        .sort((a, b) => b[1] - a[1])
+        .map(entry => entry[0]);
+      
+      const otherCategories = sortedCategories.slice(15);
+      return active.filter(p => otherCategories.includes(p[chartDimension] || 'Others'));
+    }
+    
+    if (chartDimension === 'symbol') return active;
+    
+    return active.filter(p => (p[chartDimension] || 'Others') === selectedCategory);
+  }, [portfolio, selectedCategory, chartDimension, t]);
 
   const chartData = useMemo(() => {
     const activePortfolio = portfolio.filter(item => item.quantity > 0.000001);
@@ -862,7 +886,7 @@ export default function App() {
     // If we are already in a drill-down view (selectedCategory is set), 
     // we might still want to group if there are many assets in that category.
     // But if we just selected "Others", we definitely want to see all of them.
-    if (sorted.length <= 15 || selectedCategory === t('others')) return sorted;
+    if (sorted.length <= 15 || selectedCategory) return sorted;
 
     const top15 = sorted.slice(0, 15);
     const others = sorted.slice(15);

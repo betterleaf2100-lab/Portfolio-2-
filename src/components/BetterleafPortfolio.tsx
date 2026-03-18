@@ -50,7 +50,7 @@ const StockTable = ({
   t: any
 }) => {
   const { formatCurrency } = useCurrency();
-  const [sortConfig, setSortConfig] = useState<{ key: keyof StockItem, direction: 'asc' | 'desc' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof StockItem, direction: 'asc' | 'desc' } | null>({ key: 'marketCap', direction: 'desc' });
 
   const sortedData = useMemo(() => {
     let sortableItems = [...tableData];
