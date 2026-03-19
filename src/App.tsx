@@ -82,7 +82,7 @@ import { useSettings } from './services/settingsService';
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
   const { currency, setCurrency, formatCurrency, convert, fromLocal, rates } = useCurrency();
-  const { settings, updateSettings } = useSettings();
+  const { settings, updateSettings, hasConfigDoc } = useSettings();
 
   const [monthlyContribution, setMonthlyContributionState] = useState(800); // Stored in USD
   const isUpdatingContributionRef = useRef(false);
@@ -143,17 +143,32 @@ export default function App() {
   const [onboardingStep, setOnboardingStep] = useState<number | undefined>(undefined);
 
   useEffect(() => {
-    if (user && !isPortfolioLoading && hasPortfolioDoc === false) {
-      const completed = localStorage.getItem(`onboarding_completed_${user.uid}`);
-      if (!completed) {
-        setShowOnboarding(true);
+    if (showOnboarding) return;
+    
+    if (user && !isPortfolioLoading && hasConfigDoc !== null && hasPortfolioDoc !== null) {
+      if (hasConfigDoc) {
+        // config exists
+        const step4Shown = sessionStorage.getItem(`onboarding_step4_shown_${user.uid}`);
+        if ((!hasPortfolioDoc || portfolio.length === 0) && !step4Shown) {
+          sessionStorage.setItem(`onboarding_step4_shown_${user.uid}`, 'true');
+          setOnboardingStep(4);
+          setShowOnboarding(true);
+        }
+      } else {
+        // config does not exist
+        const completed = localStorage.getItem(`onboarding_completed_${user.uid}`);
+        if (!completed) {
+          setOnboardingStep(1);
+          setShowOnboarding(true);
+        }
       }
     }
-  }, [user, isPortfolioLoading, hasPortfolioDoc]);
+  }, [user, isPortfolioLoading, hasConfigDoc, hasPortfolioDoc, portfolio.length, showOnboarding]);
 
   const handleOnboardingComplete = () => {
     if (user) {
       localStorage.setItem(`onboarding_completed_${user.uid}`, 'true');
+      sessionStorage.setItem(`onboarding_step4_shown_${user.uid}`, 'true');
     }
     setShowOnboarding(false);
     setOnboardingStep(undefined);

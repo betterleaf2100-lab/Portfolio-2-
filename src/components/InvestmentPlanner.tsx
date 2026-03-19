@@ -50,6 +50,12 @@ import { User } from 'firebase/auth';
 import { Lock, ExternalLink } from 'lucide-react';
 import { useLanguage } from '../services/i18n';
 import { useCurrency, SUPPORTED_CURRENCIES } from '../services/currencyService';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 interface Allocation {
   symbol: string;
@@ -130,6 +136,7 @@ interface InvestmentPlannerProps {
   plannerState: any;
   setPlannerState: React.Dispatch<React.SetStateAction<any>>;
   onHelpClick?: (step: number) => void;
+  showOnboarding?: boolean;
 }
 
 export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({ 
@@ -141,7 +148,8 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
   setShowUpsell,
   plannerState,
   setPlannerState,
-  onHelpClick
+  onHelpClick,
+  showOnboarding
 }) => {
   const { t } = useLanguage();
   const { formatCurrency, formatLocal, convert, currency, rates } = useCurrency();
@@ -899,7 +907,7 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
         <div className="bg-white p-4 md:p-8 rounded-2xl md:rounded-3xl border border-[#141414]/5 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 mb-8">
             <div className="flex items-center justify-between w-full">
-              <h2 className="text-lg md:text-2xl font-bold flex items-center gap-3">
+              <h2 className={cn("text-lg md:text-2xl font-bold flex items-center gap-3 w-fit rounded-lg transition-all", showOnboarding && "ring-4 ring-emerald-500 ring-offset-4 bg-white z-[60] relative px-2 py-1 -ml-2")}>
                 <Calculator className="text-emerald-600" size={24} />
                 {t('investmentPlannerTitle')}
               </h2>

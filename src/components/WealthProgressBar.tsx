@@ -65,6 +65,7 @@ interface WealthProgressBarProps {
   onDeductCredits: () => Promise<void>;
   role?: string;
   onHelpClick?: (step: number) => void;
+  showOnboarding?: boolean;
 }
 
 export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({ 
@@ -74,7 +75,8 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
   portfolio_credits,
   onDeductCredits,
   role,
-  onHelpClick
+  onHelpClick,
+  showOnboarding
 }) => {
   const { t } = useLanguage();
   const { currency, formatCurrency, formatLocal, convert, fromLocal, rates } = useCurrency();
@@ -227,7 +229,7 @@ export const WealthProgressBar: React.FC<WealthProgressBarProps> = ({
         <div className="lg:col-span-2 space-y-4 md:space-y-6">
           <div className="bg-white p-5 md:p-8 rounded-3xl border border-[#141414]/5 shadow-sm">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <h3 className="text-lg md:text-xl font-bold flex items-center gap-2 group relative">
+              <h3 className={cn("text-lg md:text-xl font-bold flex items-center gap-2 group relative w-fit rounded-lg transition-all", showOnboarding && "ring-4 ring-emerald-500 ring-offset-4 bg-white z-[60] relative px-2 py-1 -ml-2")}>
                 <Target className="text-emerald-600" />
                 {t('wealthGoal')}
                 <div className="relative group/tooltip">

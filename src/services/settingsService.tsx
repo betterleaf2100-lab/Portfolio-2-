@@ -26,6 +26,7 @@ export interface UserSettings {
 
 interface SettingsContextType {
   settings: UserSettings | null;
+  hasConfigDoc: boolean | null;
   updateSettings: (updates: Partial<UserSettings>) => Promise<void>;
   loading: boolean;
 }
@@ -34,6 +35,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<UserSettings | null>(null);
+  const [hasConfigDoc, setHasConfigDoc] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,7 +45,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const unsubscribeSnapshot = onSnapshot(settingsRef, (docSnap) => {
           if (docSnap.exists()) {
             setSettings(docSnap.data() as UserSettings);
+            setHasConfigDoc(true);
           } else {
+            setHasConfigDoc(false);
             // Default settings if none exist
             setSettings({
               currency: 'USD',
@@ -97,7 +101,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   return (
-    <SettingsContext.Provider value={{ settings, updateSettings, loading }}>
+    <SettingsContext.Provider value={{ settings, hasConfigDoc, updateSettings, loading }}>
       {children}
     </SettingsContext.Provider>
   );

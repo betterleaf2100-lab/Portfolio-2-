@@ -79,7 +79,7 @@ export function OnboardingFlow({ onComplete, onViewChange, initialStep = 1 }: On
   };
 
   return (
-    <div className="fixed top-16 inset-x-0 bottom-0 z-[40] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 md:top-16 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
