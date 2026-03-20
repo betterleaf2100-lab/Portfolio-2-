@@ -232,5 +232,15 @@ Return ONLY a JSON object.`;
     }
   });
 
-  return JSON.parse(response.text || "{}");
+  let rawText = response.text || "{}";
+  console.log("Raw AI Response:", rawText);
+  
+  // Remove markdown code blocks if present
+  if (rawText.startsWith("```json")) {
+    rawText = rawText.replace(/^```json\n/, "").replace(/\n```$/, "");
+  } else if (rawText.startsWith("```")) {
+    rawText = rawText.replace(/^```\n/, "").replace(/\n```$/, "");
+  }
+
+  return JSON.parse(rawText);
 };

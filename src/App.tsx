@@ -246,26 +246,33 @@ export default function App() {
     }
   }, [settings?.simulationParams, convert, fromLocal, monthlyContribution, plannerState.lumpSum]);
 
-  const handlePlannerStateChange = (newState: any) => {
-    setPlannerState(newState);
-    
-    // If lumpSum changed, sync to settings in USD
-    if (newState.lumpSum !== plannerState.lumpSum) {
-      const valUsd = fromLocal(newState.lumpSum);
-      updateSettings({
-        simulationParams: {
-          annualReturn: 10,
-          years: 30,
-          monthlyExpenses: 800,
-          monthlyInvestment: 800,
-          inflationRate: 3,
-          manualGoal: null,
-          useCalculatedGoal: true,
-          ...(settings?.simulationParams || {}),
-          lumpSum: valUsd
-        }
-      });
-    }
+  const handlePlannerStateChange = (newStateOrUpdater: any) => {
+    setPlannerState(prev => {
+      const newState = typeof newStateOrUpdater === 'function' ? newStateOrUpdater(prev) : newStateOrUpdater;
+      
+      // If lumpSum changed, sync to settings in USD
+      if (newState.lumpSum !== prev.lumpSum) {
+        const valUsd = fromLocal(newState.lumpSum);
+        // We use a timeout to avoid updating another state during render
+        setTimeout(() => {
+          updateSettings({
+            simulationParams: {
+              annualReturn: 10,
+              years: 30,
+              monthlyExpenses: 800,
+              monthlyInvestment: 800,
+              inflationRate: 3,
+              manualGoal: null,
+              useCalculatedGoal: true,
+              ...(settings?.simulationParams || {}),
+              lumpSum: valUsd
+            }
+          });
+        }, 0);
+      }
+      
+      return newState;
+    });
   };
   const [confirmModal, setConfirmModal] = useState<{
     show: boolean;

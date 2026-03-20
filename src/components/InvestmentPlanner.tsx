@@ -171,15 +171,15 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
     timeRange
   } = plannerState;
 
-  const setLumpSum = (val: number) => setPlannerState({ ...plannerState, lumpSum: val });
-  const setRiskId = (val: any) => setPlannerState({ ...plannerState, riskId: val });
-  const setIsProjected = (val: boolean) => setPlannerState({ ...plannerState, isProjected: val });
-  const setProjectionData = (val: any[]) => setPlannerState({ ...plannerState, projectionData: val });
-  const setProjectedAnnualReturns = (val: any[]) => setPlannerState({ ...plannerState, projectedAnnualReturns: val });
-  const setAiReasoning = (val: string | null) => setPlannerState({ ...plannerState, aiReasoning: val });
-  const setMarketSentiment = (val: string | null) => setPlannerState({ ...plannerState, marketSentiment: val });
-  const setIsBacktested = (val: boolean) => setPlannerState({ ...plannerState, isBacktested: val });
-  const setTimeRange = (val: any) => setPlannerState({ ...plannerState, timeRange: val });
+  const setLumpSum = (val: number) => setPlannerState((prev: any) => ({ ...prev, lumpSum: val }));
+  const setRiskId = (val: any) => setPlannerState((prev: any) => ({ ...prev, riskId: val }));
+  const setIsProjected = (val: boolean) => setPlannerState((prev: any) => ({ ...prev, isProjected: val }));
+  const setProjectionData = (val: any[]) => setPlannerState((prev: any) => ({ ...prev, projectionData: val }));
+  const setProjectedAnnualReturns = (val: any[]) => setPlannerState((prev: any) => ({ ...prev, projectedAnnualReturns: val }));
+  const setAiReasoning = (val: string | null) => setPlannerState((prev: any) => ({ ...prev, aiReasoning: val }));
+  const setMarketSentiment = (val: string | null) => setPlannerState((prev: any) => ({ ...prev, marketSentiment: val }));
+  const setIsBacktested = (val: boolean) => setPlannerState((prev: any) => ({ ...prev, isBacktested: val }));
+  const setTimeRange = (val: any) => setPlannerState((prev: any) => ({ ...prev, timeRange: val }));
 
   const [localMonthlyContribution, setLocalMonthlyContribution] = useState(Math.round(monthlyContribution).toString());
   const [localLumpSum, setLocalLumpSum] = useState(Math.round(lumpSum).toString());
@@ -895,6 +895,7 @@ export const InvestmentPlanner: React.FC<InvestmentPlannerProps> = ({
       setIsProjected(true);
     } catch (error) {
       console.error("AI Projection failed:", error);
+      alert(`AI 推演失敗: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsProjecting(false);
     }
