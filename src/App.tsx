@@ -1331,8 +1331,16 @@ export default function App() {
               <div className="flex flex-col items-center gap-0.5">
                 <div className="flex items-center gap-1">
                   {userData?.role === 'vip' && <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-bold rounded uppercase border border-amber-200">{t('vipBadge')}</span>}
-                  {userData?.role === 'student' && <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-bold rounded uppercase border border-emerald-200">Student</span>}
-                  {userData?.role === 'trial' && <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold rounded uppercase border border-slate-200">Trial</span>}
+                  {userData?.role === 'student' && (
+                    <a href="https://www.betterleaf.co/checkout-aitools-subscription" target="_blank" rel="noopener noreferrer" className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-[9px] font-bold rounded uppercase border border-emerald-200 hover:bg-emerald-200 transition-colors cursor-pointer">
+                      Student
+                    </a>
+                  )}
+                  {userData?.role === 'trial' && (
+                    <a href="https://school.betterleaf.co/mvi-course" target="_blank" rel="noopener noreferrer" className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold rounded uppercase border border-slate-200 hover:bg-slate-200 transition-colors cursor-pointer">
+                      Trial
+                    </a>
+                  )}
                   {userData?.role === 'admin' && <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 text-[9px] font-bold rounded uppercase border border-indigo-200">Admin</span>}
                 </div>
                 <span className="text-[10px] font-bold text-[#141414]/40 uppercase tracking-widest leading-none">{t('portfolio_credits')}: {userData?.portfolio_credits}</span>
@@ -1415,6 +1423,17 @@ export default function App() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold truncate max-w-[150px]">{user?.email}</span>
                         {userData?.role === 'vip' && <span className="px-1 py-0.5 bg-amber-100 text-amber-700 text-[8px] font-bold rounded uppercase border border-amber-200">VIP</span>}
+                        {userData?.role === 'student' && (
+                          <a href="https://www.betterleaf.co/checkout-aitools-subscription" target="_blank" rel="noopener noreferrer" className="px-1 py-0.5 bg-emerald-100 text-emerald-700 text-[8px] font-bold rounded uppercase border border-emerald-200 hover:bg-emerald-200 transition-colors cursor-pointer">
+                            Student
+                          </a>
+                        )}
+                        {userData?.role === 'trial' && (
+                          <a href="https://school.betterleaf.co/mvi-course" target="_blank" rel="noopener noreferrer" className="px-1 py-0.5 bg-slate-100 text-slate-600 text-[8px] font-bold rounded uppercase border border-slate-200 hover:bg-slate-200 transition-colors cursor-pointer">
+                            Trial
+                          </a>
+                        )}
+                        {userData?.role === 'admin' && <span className="px-1 py-0.5 bg-indigo-100 text-indigo-700 text-[8px] font-bold rounded uppercase border border-indigo-200">Admin</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
