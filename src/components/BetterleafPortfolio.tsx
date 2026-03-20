@@ -194,7 +194,7 @@ const StockTable = ({
           <tbody className="divide-y divide-[#141414]/5">
             {sortedData.map((stock, idx) => {
             const limit = category === 'holding' ? 2 : 1;
-            const isLocked = role === 'trial' && idx >= limit;
+            const isLocked = (role === 'trial' || role === 'student') && idx >= limit;
             const rowId = stock.id || stock.symbol || idx;
             
             const displayName = stock.name.length > 30 ? stock.name.substring(0, 30) + '...' : stock.name;
@@ -413,7 +413,7 @@ const StockTable = ({
           })}
         </tbody>
       </table>
-      {role === 'trial' && tableData.length > (category === 'holding' ? 2 : 1) && (
+      {(role === 'trial' || role === 'student') && tableData.length > (category === 'holding' ? 2 : 1) && (
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-white via-white/95 to-transparent flex flex-col items-center justify-end pb-8 pointer-events-none">
           <div className="pointer-events-auto flex flex-col items-center gap-4 max-w-md text-center px-6">
             <div className="flex flex-col items-center gap-2">
