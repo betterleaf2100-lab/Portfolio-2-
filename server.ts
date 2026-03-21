@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import path from "path";
 import YahooFinance from 'yahoo-finance2';
+import { GoogleGenAI, Type } from "@google/genai";
 
 dotenv.config();
 
@@ -12,13 +13,16 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
 
   // Simple in-memory cache: { symbol: { data: any, timestamp: number } }
   const marketCache = new Map<string, { data: any, timestamp: number }>();
   const historicalCache = new Map<string, { data: any, timestamp: number }>();
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for market data
   const HISTORICAL_CACHE_DURATION = 60 * 60 * 1000; // 1 hour for historical data
+
+  // AI Proxy Endpoints have been moved to Vercel Serverless Functions in the /api/ai/ directory.
+  // This ensures they run correctly on Vercel's edge/serverless infrastructure.
 
   // Yahoo Finance API Proxy
   app.get("/api/market-data", async (req, res) => {
