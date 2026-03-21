@@ -35,7 +35,8 @@
         "forwardPe": { "type": "number" },
         "thesis": { "type": "string" },
         "category": { "type": "string", "enum": ["holding", "watchlist"] },
-        "operationType": { "type": "string" }
+        "operationType": { "type": "string" },
+        "assetType": { "type": "string", "enum": ["Stock", "ETF", "Crypto"] }
       },
       "required": ["symbol", "name", "price", "category"]
     },

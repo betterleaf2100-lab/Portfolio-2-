@@ -1064,17 +1064,35 @@ export default function App() {
           const globalHoldingRef = doc(db, "apps", APP_ID, "global", "holding");
           const statsRef = doc(db, "apps", APP_ID, "global", "total_value");
           
-          const globalItems = portfolio.filter(p => p.quantity > 0).map(p => ({
-            symbol: p.symbol,
-            name: p.name || p.symbol,
-            price: p.currentPrice,
-            marketCap: p.marketCap || 'N/A',
-            weight: (p.quantity * p.currentPrice * p.fxRateToUsd / totalValue * 100),
-            upside: 0,
-            forwardPe: p.forwardPe || 0,
-            thesis: t('syncedFromDashboard'),
-            category: 'holding'
-          }));
+          // Fetch existing holding data to preserve thesis, upside, and operationType
+          const existingHoldingSnap = await getDoc(globalHoldingRef);
+          const existingItems = existingHoldingSnap.exists() ? (existingHoldingSnap.data().items || []) : [];
+          const existingItemsMap = new Map(existingItems.map((item: any) => [item.symbol, item]));
+          
+          const globalItems = portfolio.filter(p => p.quantity > 0).map(p => {
+            let mappedAssetType = 'Stock';
+            if (p.assetType === 'ETF' || p.assetType === 'Crypto') {
+              mappedAssetType = p.assetType;
+            } else if (p.assetType === 'Fund') {
+              mappedAssetType = 'ETF';
+            }
+            
+            const existing = existingItemsMap.get(p.symbol) as any;
+            
+            return {
+              symbol: p.symbol,
+              name: p.name || p.symbol,
+              price: p.currentPrice,
+              marketCap: p.marketCap || 'N/A',
+              weight: (p.quantity * p.currentPrice * p.fxRateToUsd / totalValue * 100),
+              upside: existing?.upside || 0,
+              forwardPe: p.forwardPe || 0,
+              thesis: existing?.thesis || t('syncedFromDashboard'),
+              operationType: existing?.operationType || '',
+              category: 'holding',
+              assetType: mappedAssetType
+            };
+          });
           
           const publishData = {
             items: globalItems,

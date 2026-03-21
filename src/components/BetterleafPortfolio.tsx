@@ -20,6 +20,7 @@ interface StockItem {
   thesis: string;
   category: 'holding' | 'watchlist';
   operationType?: string; // e.g., 'Buy', 'Hold', 'Sell'
+  assetType?: 'Stock' | 'ETF' | 'Crypto';
 }
 
 const StockTable = ({ 
@@ -232,6 +233,17 @@ const StockTable = ({
                           placeholder={t('namePlaceholder')}
                           className="bg-white border border-[#141414]/10 rounded-lg px-2 py-1 text-xs w-full focus:ring-2 focus:ring-emerald-500 outline-none"
                         />
+                        <select
+                          value={stock.assetType || 'Stock'}
+                          onChange={(e) => {
+                            setEditingData(prev => prev.map(d => d.id === stock.id ? { ...d, assetType: e.target.value as any } : d));
+                          }}
+                          className="bg-white border border-[#141414]/10 rounded-lg px-2 py-1 text-[10px] w-full focus:ring-2 focus:ring-emerald-500 outline-none"
+                        >
+                          <option value="Stock">{t('stockAsset')}</option>
+                          <option value="ETF">{t('etfAsset')}</option>
+                          <option value="Crypto">{t('cryptoAsset')}</option>
+                        </select>
                       </div>
                     ) : (
                       <div className="flex flex-col">
@@ -253,7 +265,14 @@ const StockTable = ({
                             </a>
                           </div>
                         ) : (
-                          <span className="text-xs md:text-sm font-bold text-[#141414] group-hover:text-emerald-600 transition-colors">{stock.symbol}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs md:text-sm font-bold text-[#141414] group-hover:text-emerald-600 transition-colors">{stock.symbol}</span>
+                            {stock.assetType && stock.assetType !== 'Stock' && (
+                              <span className="px-1.5 py-0.5 bg-[#141414]/5 text-[#141414]/60 rounded text-[8px] font-bold uppercase tracking-wider">
+                                {t(stock.assetType.toLowerCase() + 'Asset')}
+                              </span>
+                            )}
+                          </div>
                         )}
                         <span className={`text-[10px] md:text-[11px] text-[#141414]/40 font-medium ${isLocked ? 'blur-[4px] select-none opacity-30' : ''}`}>
                           {isLocked ? t('hiddenCompany') : displayName}
@@ -557,6 +576,7 @@ export const BetterleafPortfolio: React.FC<{
   const [editingData, setEditingData] = useState<StockItem[]>([]);
   const [globalStats, setGlobalStats] = useState({ totalValue: 2450000, avgUpside: 24.5 });
   const [editingStats, setEditingStats] = useState({ totalValue: 2450000, avgUpside: 24.5 });
+  const [assetFilter, setAssetFilter] = useState<'All' | 'Stock' | 'ETF' | 'Crypto'>('Stock');
 
   useEffect(() => {
     if (!isEditing) {
@@ -649,8 +669,9 @@ export const BetterleafPortfolio: React.FC<{
       // Sanitize data: remove 'id' and any undefined fields
       const sanitize = (item: StockItem) => {
         const { id, ...rest } = item;
+        const dataToSave = { ...rest, assetType: rest.assetType || 'Stock' };
         return Object.fromEntries(
-          Object.entries(rest).filter(([_, v]) => v !== undefined)
+          Object.entries(dataToSave).filter(([_, v]) => v !== undefined)
         );
       };
 
@@ -684,8 +705,13 @@ export const BetterleafPortfolio: React.FC<{
     }
   };
 
-  const holdings = (isEditing ? editingData : betterleafData).filter(d => d.category === 'holding');
-  const watchlist = (isEditing ? editingData : betterleafData).filter(d => d.category === 'watchlist');
+  const filteredData = (isEditing ? editingData : betterleafData).filter(d => {
+    if (assetFilter === 'All') return true;
+    const type = d.assetType || 'Stock';
+    return type === assetFilter;
+  });
+  const holdings = filteredData.filter(d => d.category === 'holding');
+  const watchlist = filteredData.filter(d => d.category === 'watchlist');
 
   return (
     <motion.div 
@@ -784,6 +810,23 @@ export const BetterleafPortfolio: React.FC<{
             )}
           </div>
         </div>
+      </div>
+
+      {/* Asset Filter */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+        {(['Stock', 'ETF', 'Crypto', 'All'] as const).map(type => (
+          <button
+            key={type}
+            onClick={() => setAssetFilter(type)}
+            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+              assetFilter === type 
+                ? 'bg-[#141414] text-white' 
+                : 'bg-[#141414]/5 text-[#141414]/60 hover:bg-[#141414]/10 hover:text-[#141414]'
+            }`}
+          >
+            {type === 'All' ? t('allAssets') : t(type.toLowerCase() + 'Asset')}
+          </button>
+        ))}
       </div>
 
       {/* Tables Section */}

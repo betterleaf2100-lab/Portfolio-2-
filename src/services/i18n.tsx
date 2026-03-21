@@ -57,6 +57,10 @@ export const translations: Translations = {
   addNotes: { 'zh-TW': '新增筆記...', 'zh-CN': '新增笔记...', 'en': 'Add notes...' },
   
   assetType: { 'zh-TW': '資產類型', 'zh-CN': '资产类型', 'en': 'Asset Type' },
+  allAssets: { 'zh-TW': '全部', 'zh-CN': '全部', 'en': 'All' },
+  stockAsset: { 'zh-TW': '股票', 'zh-CN': '股票', 'en': 'Stock' },
+  etfAsset: { 'zh-TW': 'ETF', 'zh-CN': 'ETF', 'en': 'ETF' },
+  cryptoAsset: { 'zh-TW': '加密貨幣', 'zh-CN': '加密货币', 'en': 'Crypto' },
   stock: { 'zh-TW': '股票', 'zh-CN': '股票', 'en': 'Stock' },
   etf: { 'zh-TW': 'ETF', 'zh-CN': 'ETF', 'en': 'ETF' },
   fund: { 'zh-TW': '基金', 'zh-CN': '基金', 'en': 'Fund' },
