@@ -5,6 +5,7 @@ import './index.css';
 import { LanguageProvider } from './services/i18n';
 import { CurrencyProvider } from './services/currencyService';
 import { SettingsProvider } from './services/settingsService';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -12,6 +13,7 @@ createRoot(document.getElementById('root')!).render(
       <LanguageProvider>
         <CurrencyProvider>
           <App />
+          <SpeedInsights />
         </CurrencyProvider>
       </LanguageProvider>
     </SettingsProvider>
